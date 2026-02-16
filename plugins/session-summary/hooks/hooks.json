@@ -7,7 +7,7 @@
           {
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/rtk-baseline.sh",
-            "timeout": 5
+            "timeout": 5000
           }
         ]
       }
