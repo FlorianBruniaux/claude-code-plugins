@@ -1,0 +1,19 @@
+{
+  "name": "florian-claude-tools",
+  "owner": { "name": "Florian Bruniaux" },
+  "metadata": {
+    "description": "Production-ready Claude Code plugins from the Ultimate Guide",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "session-summary",
+      "source": "./plugins/session-summary",
+      "description": "Session analytics dashboard — 15 configurable sections displayed at session end (models, cost, cache, tools, files, git diff, RTK savings...)",
+      "author": { "name": "Florian Bruniaux" },
+      "keywords": ["hooks", "analytics", "session", "cost-tracking", "dashboard"],
+      "category": "productivity",
+      "license": "MIT"
+    }
+  ]
+}

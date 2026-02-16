@@ -1,0 +1,26 @@
+{
+  "description": "Session analytics — auto-wired hooks for session start/end",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/rtk-baseline.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/session-summary.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
