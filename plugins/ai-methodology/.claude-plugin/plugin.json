@@ -1,0 +1,6 @@
+{
+  "name": "ai-methodology",
+  "description": "AI-assisted development methodology — scaffolding skills, talk pipeline (6 stages), landing page generator, context engineering, and design templates",
+  "version": "1.0.0",
+  "author": { "name": "Florian Bruniaux" }
+}

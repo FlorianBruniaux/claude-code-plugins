@@ -1,0 +1,6 @@
+{
+  "name": "pr-workflow",
+  "description": "PR and issue lifecycle — structured planning (CEO/Eng gates), PR creation, code review, issue triage, session handoffs",
+  "version": "1.0.0",
+  "author": { "name": "Florian Bruniaux" }
+}

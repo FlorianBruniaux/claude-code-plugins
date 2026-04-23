@@ -1,0 +1,126 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "bridge-plan-v1",
+  "title": "Bridge Plan Schema",
+  "description": "Schema for Claude Code → LM Studio bridge execution plans",
+  "type": "object",
+  "required": ["$schema", "id", "status", "context", "steps"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "const": "bridge-plan-v1"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^plan_[a-z0-9_]+$",
+      "description": "Unique plan identifier (e.g., plan_auth_refactor)"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["pending", "in_progress", "completed", "failed"],
+      "default": "pending"
+    },
+    "context": {
+      "type": "object",
+      "required": ["objective"],
+      "properties": {
+        "project": {
+          "type": "string",
+          "description": "Absolute path to project root"
+        },
+        "objective": {
+          "type": "string",
+          "description": "High-level description of what the plan achieves"
+        },
+        "constraints": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Constraints or requirements for execution"
+        },
+        "files_context": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "enum": ["LOAD", "REFERENCE"],
+            "description": "LOAD = inject content, REFERENCE = mention path only"
+          },
+          "description": "Files to include in execution context"
+        }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "description", "prompt"],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Step number (1-indexed)"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["analysis", "code_generation", "code_modification", "decision"],
+            "description": "Type of task for this step"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Short description of what this step does"
+          },
+          "prompt": {
+            "type": "string",
+            "description": "Full prompt to send to LM Studio"
+          },
+          "depends_on": {
+            "type": "array",
+            "items": {"type": "integer"},
+            "default": [],
+            "description": "Step IDs that must complete before this one"
+          },
+          "validation": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["json", "syntax_check", "contains_keys", "non_empty"],
+                "description": "Validation method for step output"
+              },
+              "keys": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Required keys for contains_keys validation"
+              }
+            },
+            "required": ["type"]
+          },
+          "file_output": {
+            "type": "string",
+            "description": "Path to write output (relative to project root)"
+          },
+          "on_failure": {
+            "type": "string",
+            "enum": ["retry_with_context", "skip", "halt"],
+            "default": "retry_with_context",
+            "description": "Behavior when step fails validation"
+          },
+          "max_retries": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5,
+            "default": 2,
+            "description": "Maximum retry attempts"
+          }
+        }
+      }
+    },
+    "rollback_strategy": {
+      "type": "string",
+      "enum": ["revert_files", "none"],
+      "default": "none",
+      "description": "What to do on plan failure"
+    }
+  }
+}

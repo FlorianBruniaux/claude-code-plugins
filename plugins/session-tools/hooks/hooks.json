@@ -1,0 +1,14 @@
+{
+  "hooks": [
+    { "event": "Stop", "matcher": ".*", "command": "bash hooks/bash/session-summary.sh", "description": "Display session analytics dashboard on stop" },
+    { "event": "Stop", "matcher": ".*", "command": "bash hooks/bash/session-logger.sh", "description": "Log session metadata to file" },
+    { "event": "Stop", "matcher": ".*", "command": "bash hooks/bash/auto-rename-session.sh", "description": "Auto-rename session from work done" },
+    { "event": "SubagentStop", "matcher": ".*", "command": "bash hooks/bash/subagent-stop.sh", "description": "Handle subagent completion" },
+    { "event": "PostToolUse", "matcher": "Bash", "command": "bash hooks/bash/smart-suggest.sh", "description": "Suggest next commands based on output" },
+    { "event": "PostToolUse", "matcher": "Bash", "command": "bash hooks/bash/rtk-auto-wrapper.sh", "description": "Auto-wrap commands with RTK" },
+    { "event": "PreToolUse", "matcher": "Bash", "command": "bash hooks/bash/rtk-baseline.sh", "description": "Enforce RTK token efficiency baseline" },
+    { "event": "PreToolUse", "matcher": ".*", "command": "bash hooks/bash/identity-reinjection.sh", "description": "Reinject persona/identity on each turn" },
+    { "event": "PostToolUse", "matcher": ".*", "command": "bash hooks/bash/learning-capture.sh", "description": "Capture learnings from tool interactions" },
+    { "event": "Stop", "matcher": ".*", "command": "bash hooks/bash/tts-selective.sh", "description": "Selective TTS narration on completion" }
+  ]
+}

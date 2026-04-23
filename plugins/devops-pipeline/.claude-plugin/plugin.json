@@ -1,0 +1,6 @@
+{
+  "name": "devops-pipeline",
+  "description": "CI/CD automation — git worktrees, deploy pipeline, canary monitoring, auto-format/test hooks, and GitHub Actions templates",
+  "version": "1.0.0",
+  "author": { "name": "Florian Bruniaux" }
+}

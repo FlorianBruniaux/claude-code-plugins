@@ -1,0 +1,5 @@
+{
+  "hooks": [
+    { "event": "PreToolUse", "matcher": "Bash", "command": "bash hooks/bash/validate-changes.sh", "description": "LLM-as-a-Judge validation before committing" }
+  ]
+}

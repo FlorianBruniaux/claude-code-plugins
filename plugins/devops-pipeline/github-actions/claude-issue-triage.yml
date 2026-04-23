@@ -1,0 +1,101 @@
+name: Claude Issue Triage
+on:
+  issues:
+    types: [opened, edited, reopened]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    env:
+      CLAUDE_MODEL: claude-3-5-sonnet-20240620
+    steps:
+      - name: Collect context & similar issues
+        id: gather
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TITLE="${{ github.event.issue.title }}"
+          BODY="${{ github.event.issue.body }}"
+          # naive similar search by title words
+          Q=$(echo "$TITLE" | tr -dc '[:alnum:] ' | awk '{print $1" "$2" "$3" "$4}')
+          gh api -X GET search/issues -f q="repo:${{ github.repository }} is:issue $Q" -f per_page=5 > similars.json
+          echo "$TITLE" > title.txt
+          echo "$BODY" > body.txt
+
+      - name: Ask Claude for triage JSON
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          cat > payload.json << 'JSON'
+          {
+            "model": "${{ env.CLAUDE_MODEL }}",
+            "max_tokens": 1500,
+            "system": "You are a pragmatic triage engineer. Be specific, cautious with duplicates.",
+            "messages": [{
+              "role": "user",
+              "content": [{
+                "type":"text",
+                "text":"Given the issue and similar candidates, produce STRICT JSON with keys: labels (array of strings), severity (one of: low, medium, high, critical), duplicate_url (string or empty), comment_markdown (string brief). Do not include any extra keys."
+              },
+              {"type":"text","text":"Issue title:\n"},
+              {"type":"text","text": "PLACEHOLDER_TITLE"},
+              {"type":"text","text":"\n\nIssue body:\n"},
+              {"type":"text","text": "PLACEHOLDER_BODY"},
+              {"type":"text","text":"\n\nSimilar issues (JSON):\n"},
+              {"type":"text","text": "PLACEHOLDER_SIMILARS"}]
+            }]
+          }
+          JSON
+
+          # Inject files safely
+          jq --arg title "$(cat title.txt)" '.messages[0].content[2].text = $title' payload.json \
+          | jq --arg body "$(cat body.txt)" '.messages[0].content[4].text = $body' \
+          | jq --arg sims "$(cat similars.json)" '.messages[0].content[6].text = $sims' > payload.final.json
+
+          curl -s https://api.anthropic.com/v1/messages \
+            -H "x-api-key: $ANTHROPIC_API_KEY" \
+            -H "anthropic-version: 2023-06-01" \
+            -H "content-type: application/json" \
+            -d @payload.final.json > out.json
+          jq -r '.content[0].text' out.json > triage.json || echo '{}' > triage.json
+
+          # Validate JSON to avoid posting garbage
+          jq -e . triage.json >/dev/null 2>&1 || echo '{"labels":[],"severity":"low","duplicate_url":"","comment_markdown":"(triage failed to parse)"}' > triage.json
+
+      - name: Apply labels (optional)
+        if: ${{ false }} # flip to `true` to auto-apply labels
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const triage = JSON.parse(require('fs').readFileSync('triage.json','utf8'))
+            if (triage.labels?.length) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: triage.labels
+              })
+            }
+
+      - name: Post triage comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs')
+            const triage = JSON.parse(fs.readFileSync('triage.json','utf8'))
+            const md = `### 🤖 Triage
+            - **Suggested labels:** ${triage.labels?.join(', ') || '—'}
+            - **Severity:** ${triage.severity || '—'}
+            ${triage.duplicate_url ? `- **Possible duplicate:** ${triage.duplicate_url}\n` : ''}
+            ---
+            ${triage.comment_markdown || ''}`
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: md
+            })

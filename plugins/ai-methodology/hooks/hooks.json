@@ -1,0 +1,5 @@
+{
+  "hooks": [
+    { "event": "PostToolUse", "matcher": ".*", "command": "bash hooks/bash/learning-capture.sh", "description": "Capture methodology insights from interactions" }
+  ]
+}

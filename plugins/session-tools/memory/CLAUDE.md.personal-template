@@ -1,0 +1,67 @@
+# Personal Claude Memory
+> This file provides Claude with your personal preferences.
+> Place at: ~/.claude/CLAUDE.md (global, applies to all projects).
+
+## Communication Style
+
+- Be concise and direct
+- Use code examples over explanations
+- Challenge my assumptions when needed
+- Don't over-explain obvious things
+
+## Development Preferences
+
+### Languages & Frameworks
+- Primary: TypeScript, React, Node.js
+- Secondary: Python, Go
+- Preferred test framework: Vitest/Jest
+
+### Code Style
+- Prefer functional programming
+- Use early returns
+- Keep functions small
+- Meaningful variable names over comments
+
+### Tools
+- Editor: VS Code
+- Terminal: iTerm2 / Windows Terminal
+- Version control: Git
+
+## Workflow Preferences
+
+### When Writing Code
+- Always include type definitions
+- Add error handling
+- Write tests for critical paths
+- Use async/await over callbacks
+
+### When Reviewing
+- Focus on logic and security first
+- Style suggestions are secondary
+- Point out potential edge cases
+
+### When Debugging
+- Show me the investigation process
+- Explain your reasoning
+- Suggest multiple solutions if applicable
+
+## Common Shortcuts
+
+- `cc` → `claude`
+- `gcm` → `git commit -m`
+- `gp` → `git push`
+
+## Pet Peeves
+
+- Don't add unnecessary comments
+- Don't over-engineer simple solutions
+- Don't ignore error handling
+- Don't use `any` in TypeScript
+
+## Learning Goals
+
+- [Current focus areas for learning]
+
+## Notes
+
+- [Any other personal notes for Claude]

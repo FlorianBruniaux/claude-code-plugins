@@ -3,7 +3,7 @@
   "owner": { "name": "Florian Bruniaux" },
   "metadata": {
     "description": "Production-ready Claude Code plugins from the Ultimate Guide",
-    "version": "1.0.0"
+    "version": "2.0.0"
   },
   "plugins": [
     {
@@ -13,6 +13,69 @@
       "author": { "name": "Florian Bruniaux" },
       "keywords": ["hooks", "analytics", "session", "cost-tracking", "dashboard"],
       "category": "productivity",
+      "license": "MIT"
+    },
+    {
+      "name": "security-suite",
+      "source": "./plugins/security-suite",
+      "description": "Security auditing pipeline — OWASP checks, vulnerability scanning, threat detection, cyber-defense multi-agent pipeline, and 13 protective hooks",
+      "author": { "name": "Florian Bruniaux" },
+      "keywords": ["security", "owasp", "audit", "threat", "vulnerability", "hooks"],
+      "category": "security",
+      "license": "MIT"
+    },
+    {
+      "name": "devops-pipeline",
+      "source": "./plugins/devops-pipeline",
+      "description": "CI/CD automation — git worktrees, deploy pipeline, canary monitoring, auto-format/test hooks, and GitHub Actions templates",
+      "author": { "name": "Florian Bruniaux" },
+      "keywords": ["ci", "cd", "git", "deployment", "hooks", "github-actions"],
+      "category": "devops",
+      "license": "MIT"
+    },
+    {
+      "name": "release-automation",
+      "source": "./plugins/release-automation",
+      "description": "Release workflow — generate changelogs, release notes (3 formats), and social content (LinkedIn/Twitter/Slack/Newsletter) from git commits",
+      "author": { "name": "Florian Bruniaux" },
+      "keywords": ["release", "changelog", "release-notes", "social", "versioning"],
+      "category": "productivity",
+      "license": "MIT"
+    },
+    {
+      "name": "code-quality",
+      "source": "./plugins/code-quality",
+      "description": "Code quality pipeline — SOLID refactoring, TDD workflow, GoF design patterns, performance optimization, and 6 specialist review agents",
+      "author": { "name": "Florian Bruniaux" },
+      "keywords": ["code-review", "refactoring", "testing", "tdd", "design-patterns", "solid"],
+      "category": "quality",
+      "license": "MIT"
+    },
+    {
+      "name": "pr-workflow",
+      "source": "./plugins/pr-workflow",
+      "description": "PR and issue lifecycle — structured planning (CEO/Eng gates), PR creation, code review, issue triage, session handoffs",
+      "author": { "name": "Florian Bruniaux" },
+      "keywords": ["pr", "issues", "review", "triage", "planning", "handoff"],
+      "category": "collaboration",
+      "license": "MIT"
+    },
+    {
+      "name": "session-tools",
+      "source": "./plugins/session-tools",
+      "description": "Session productivity — cost/token monitoring (ccboard), voice refinement, context catchup, MCP integration templates, and 11 session hooks",
+      "author": { "name": "Florian Bruniaux" },
+      "keywords": ["session", "monitoring", "cost", "mcp", "voice", "hooks"],
+      "category": "productivity",
+      "license": "MIT"
+    },
+    {
+      "name": "ai-methodology",
+      "source": "./plugins/ai-methodology",
+      "description": "AI-assisted development methodology — scaffolding skills, talk pipeline (6 stages), landing page generator, context engineering, and design templates",
+      "author": { "name": "Florian Bruniaux" },
+      "keywords": ["methodology", "scaffolding", "skills", "templates", "talk", "context-engineering"],
+      "category": "methodology",
       "license": "MIT"
     }
   ]

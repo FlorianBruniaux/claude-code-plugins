@@ -1,0 +1,155 @@
+name: Claude PR Auto-Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    # Skip draft PRs to save costs
+    branches:
+      - main
+      - develop
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  claude-review:
+    # Skip if PR is in draft mode
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for better context
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v41
+        with:
+          files: |
+            **/*.ts
+            **/*.tsx
+            **/*.js
+            **/*.jsx
+            **/*.py
+            **/*.java
+            **/*.go
+          files_ignore: |
+            **/dist/**
+            **/build/**
+            **/*.min.js
+            **/node_modules/**
+            **/*.lock
+            package-lock.json
+            yarn.lock
+
+      - name: Claude Code PR Review
+        uses: anthropics/claude-code-action@main
+        if: steps.changed-files.outputs.any_changed == 'true'
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+
+          # Use Sonnet for cost-effectiveness (can upgrade to Opus for complex PRs)
+          model: claude-sonnet-4-20250514
+
+          # Comprehensive review prompt
+          direct_prompt: |
+            You are conducting a thorough code review of this pull request.
+
+            **Context:**
+            - PR Title: ${{ github.event.pull_request.title }}
+            - PR Description: ${{ github.event.pull_request.body }}
+            - Author: ${{ github.event.pull_request.user.login }}
+            - Changed files: ${{ steps.changed-files.outputs.all_changed_files }}
+
+            **Review Focus Areas:**
+
+            1. **Correctness**: Logic errors, edge cases, potential bugs
+            2. **Security**: Vulnerabilities, input validation, authentication/authorization
+            3. **Performance**: Inefficient algorithms, unnecessary operations, memory leaks
+            4. **Readability**: Code clarity, naming conventions, comments
+            5. **Maintainability**: Code duplication, modularity, coupling
+            6. **Testing**: Test coverage, test quality, missing test cases
+            7. **Best Practices**: Language idioms, framework conventions, design patterns
+            8. **Breaking Changes**: API compatibility, migration requirements
+
+            **Instructions:**
+
+            - Fetch the PR diff and analyze all changes carefully
+            - Leave inline comments on specific lines where issues are found
+            - Use this format for inline comments:
+              - 🔴 **Critical**: Must fix before merge (security, bugs, breaking changes)
+              - 🟡 **Important**: Should fix (performance, maintainability)
+              - 🟢 **Suggestion**: Nice to have (style, optimization)
+              - 💡 **Tip**: Educational comment (best practice, alternative approach)
+
+            - For each issue:
+              1. Explain what's wrong and why it matters
+              2. Suggest specific code improvements
+              3. If relevant, provide example code
+
+            - Also provide a summary review comment with:
+              - Overall assessment (Approve / Request Changes / Comment)
+              - Key strengths of the PR
+              - Critical issues requiring attention
+              - Estimated risk level (Low / Medium / High)
+
+            - Be constructive and respectful
+            - Prioritize clarity and actionability over quantity
+            - If code looks good, acknowledge what was done well
+
+            **Tools Available:**
+            Use the GitHub MCP tools to:
+            1. Fetch PR diff
+            2. Add inline comments to pending review
+            3. Submit the review with appropriate status
+
+            Begin your review now.
+
+          # GitHub MCP tools for PR interaction
+          allowed_tools: >-
+            mcp__github__get_pull_request_diff,
+            mcp__github__create_pending_pull_request_review,
+            mcp__github__add_comment_to_pending_review,
+            mcp__github__submit_pending_pull_request_review,
+            mcp__github__get_pull_request,
+            mcp__github__list_commits,
+            Read,
+            Glob
+
+          # Optional: Add project context
+          # append_system_prompt: |
+          #   Project conventions:
+          #   - Use TypeScript strict mode
+          #   - Follow functional programming patterns
+          #   - All functions must have JSDoc comments
+          #   - Test coverage must be >80%
+
+      - name: Comment on skipped review
+        if: steps.changed-files.outputs.any_changed == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✅ **No reviewable code changes detected** - Only non-code files were modified (build artifacts, dependencies, etc.)'
+            })
+
+      - name: Handle review failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '⚠️ **Claude Code review failed** - Check the Actions log for details. A human reviewer should review this PR.'
+            })

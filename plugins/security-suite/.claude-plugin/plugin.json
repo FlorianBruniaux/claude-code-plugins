@@ -1,0 +1,6 @@
+{
+  "name": "security-suite",
+  "description": "Security auditing pipeline — OWASP checks, vulnerability scanning, threat detection, cyber-defense multi-agent pipeline, and 13 protective hooks",
+  "version": "1.0.0",
+  "author": { "name": "Florian Bruniaux" }
+}

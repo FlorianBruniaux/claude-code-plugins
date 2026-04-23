@@ -1,0 +1,6 @@
+{
+  "name": "code-quality",
+  "description": "Code quality pipeline — SOLID refactoring, TDD workflow, design patterns, performance optimization, and 6 specialist review agents",
+  "version": "1.0.0",
+  "author": { "name": "Florian Bruniaux" }
+}

@@ -1,0 +1,6 @@
+{
+  "hooks": [
+    { "event": "PreToolUse", "matcher": "Write|Edit", "command": "bash hooks/bash/file-guard.sh", "description": "Guard critical files from unintended edits" },
+    { "event": "PostToolUse", "matcher": "Bash", "command": "bash hooks/bash/velocity-governor.sh", "description": "Prevent runaway agent loops" }
+  ]
+}

@@ -1,0 +1,71 @@
+# Project Memory - [Project Name]
+
+> This file provides Claude with persistent context about your project.
+> Place at: ./CLAUDE.md (project root) for team conventions.
+
+## Project Overview
+
+**Name**: [Project Name]
+**Type**: [Web app / API / CLI / Library]
+**Stack**: [e.g., TypeScript, Next.js, Prisma, PostgreSQL]
+
+## Architecture
+
+```
+src/
+├── app/          # Next.js app router
+├── components/   # React components
+├── lib/          # Shared utilities
+├── services/     # Business logic
+└── types/        # TypeScript types
+```
+
+## Conventions
+
+### Code Style
+- Use TypeScript strict mode
+- Prefer `const` over `let`
+- Use named exports
+- Maximum function length: 30 lines
+
+### Naming
+- Files: `kebab-case.ts`
+- Components: `PascalCase.tsx`
+- Functions: `camelCase`
+- Constants: `SCREAMING_SNAKE_CASE`
+
+### Git
+- Branch format: `type/description` (e.g., `feat/user-auth`)
+- Commit format: Conventional Commits
+- PR required for main branch
+
+## Key Files
+
+- `@src/lib/db.ts` - Database connection
+- `@src/services/auth.ts` - Authentication logic
+- `@docs/api.md` - API documentation
+
+## Testing
+
+- Framework: Vitest
+- Run: `npm test`
+- Coverage target: 80%
+
+## Commands
+
+```bash
+npm run dev      # Development server
+npm run build    # Production build
+npm run test     # Run tests
+npm run lint     # Lint code
+```
+
+## Known Issues
+
+- [Issue description and workaround if any]
+
+## Team Contacts
+
+- **Tech Lead**: [Name]
+- **Backend**: [Name]
+- **Frontend**: [Name]

@@ -1,0 +1,47 @@
+#!/bin/bash
+# PreToolUse hook - Block commands containing secrets
+# Place in: .claude/hooks/security-check.sh
+# Register in: .claude/settings.json
+
+INPUT=$(cat)
+TOOL=$(echo "$INPUT" | jq -r '.tool_name')
+
+if [[ "$TOOL" == "Bash" ]]; then
+    COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command')
+
+    # Check for common secret patterns
+    PATTERNS=(
+        "password="
+        "PASSWORD="
+        "secret="
+        "SECRET="
+        "api_key="
+        "API_KEY="
+        "apikey="
+        "token="
+        "TOKEN="
+        "aws_access_key"
+        "AWS_ACCESS_KEY"
+        "aws_secret"
+        "AWS_SECRET"
+        "private_key"
+        "PRIVATE_KEY"
+    )
+
+    for PATTERN in "${PATTERNS[@]}"; do
+        if echo "$COMMAND" | grep -qi "$PATTERN"; then
+            echo "{\"decision\": \"block\", \"reason\": \"Potential secret detected: $PATTERN\"}"
+            exit 2
+        fi
+    done
+
+    # Check for hardcoded credentials in common formats
+    # API keys (typically long alphanumeric strings)
+    if echo "$COMMAND" | grep -qE "(sk-[a-zA-Z0-9]{20,}|pk_[a-zA-Z0-9]{20,}|[a-f0-9]{32,})"; then
+        echo "{\"decision\": \"block\", \"reason\": \"Potential API key or hash detected\"}"
+        exit 2
+    fi
+fi
+
+# Allow the command
+exit 0

@@ -1,0 +1,18 @@
+# Claude Code - Git Ignore Patterns
+# Add these to your project's .gitignore
+
+# Local settings (personal preferences)
+.claude/settings.local.json
+
+# Local memory (personal notes, not for team)
+.claude/CLAUDE.md
+
+# MCP server data (if using Serena memory)
+.serena/
+
+# Temporary Claude files
+.claude/tmp/
+.claude/cache/
+
+# Debug logs
+claude-debug.log

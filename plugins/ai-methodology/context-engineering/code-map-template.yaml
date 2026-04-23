@@ -1,0 +1,107 @@
+# machine-readable/code-map.yaml
+# Structural metadata for AI assistants — auto-generated, never hand-edited.
+#
+# Purpose: give Claude a structural picture of the codebase WITHOUT loading rules.
+#          Rules live in CLAUDE.md. Shape lives here.
+#
+# Generate: add a script that calls readdirSync/glob on your layer roots, then
+#           runs on pnpm ai:sync (or equivalent). Should take < 1 second.
+#
+# Load strategy: DO NOT auto-import this file in CLAUDE.md.
+#                Register it in a pointer table (see CLAUDE.md example below)
+#                and load on demand before implementation tasks.
+#
+# Token budget target: keep under 1K tokens (~80-120 lines). If this file
+#                      grows past that, you are adding too much detail.
+#
+# CLAUDE.md pointer entry (copy this row into your indexes table):
+#
+#   | machine-readable/code-map.yaml | Architecture layers (counts + roots),
+#     component domains, nested context files, project stats | Before any
+#     implementation task: new file, new route, new component |
+
+version: "1.0.0"
+generated: "YYYY-MM-DDTHH:MM:SS.000Z"   # auto-filled by generation script
+
+# One-line description of your architecture flow.
+# Helps Claude orient quickly when navigating unfamiliar layers.
+architecture: "Client → API → Service → Repository → Database"
+
+# ─── Architecture layers ──────────────────────────────────────────────────────
+# List each distinct layer that has a dedicated root directory.
+# count: number of files (not dirs) in that root — auto-generated.
+# description: terse rule about what belongs here, especially what does NOT.
+layers:
+  api:
+    root: "src/api"
+    description: "Input validation + delegation to service. No business logic."
+    count: 0   # auto-generated
+
+  services:
+    root: "src/services"
+    description: "Business logic, authorization checks, no direct DB calls."
+    count: 0
+
+  repositories:
+    root: "src/repositories"
+    description: "Database access only. No business logic, no auth."
+    count: 0
+
+  # Add or remove layers to match your actual architecture.
+  # Example for a Next.js App Router project:
+  #
+  # app_routes:
+  #   root: "src/app"
+  #   description: "Next.js App Router pages and layouts."
+  #   count: 0
+  #
+  # hooks:
+  #   root: "src/hooks"
+  #   description: "Shared React hooks. No direct API calls — use tRPC/fetch."
+  #   count: 0
+
+# ─── Component/feature domains ────────────────────────────────────────────────
+# Group UI components (or equivalent) by business domain.
+# Gives Claude a fast answer to "where does this feature live?"
+# count: number of component files in that domain directory.
+component_domains:
+  - { name: "auth",        path: "src/components/auth",        count: 0 }
+  - { name: "dashboard",   path: "src/components/dashboard",   count: 0 }
+  - { name: "settings",    path: "src/components/settings",    count: 0 }
+  # Add one entry per feature domain. Remove this comment block once filled in.
+  # Keep names short (match the directory name exactly).
+
+# ─── Nested context files ─────────────────────────────────────────────────────
+# Auto-discovered CLAUDE.md / AI_INSTRUCTIONS.md under src/ and tests/.
+# Claude can check this list to know which layer-specific instruction files
+# exist before browsing the filesystem manually.
+#
+# lines: line count of the file — auto-generated.
+# focus: first H1 heading of the file — auto-generated.
+nested_contexts:
+  - { path: "src/CLAUDE.md",        lines: 0, focus: "Replace with H1 from that file" }
+  - { path: "tests/CLAUDE.md",      lines: 0, focus: "Replace with H1 from that file" }
+  # Add entries for each CLAUDE.md / AI_INSTRUCTIONS.md in subdirectories.
+  # Remove any entry whose file no longer exists — the generation script handles this.
+
+# ─── Project stats ────────────────────────────────────────────────────────────
+# Aggregate numbers Claude can answer in one lookup without browsing the FS.
+# All auto-generated.
+stats:
+  total_source_files: 0    # e.g. all .ts + .tsx
+  total_test_files: 0      # e.g. **/*.test.ts + **/*.spec.ts
+  # Optional: add counts meaningful to your stack.
+  # prisma_models: 0       # grep "^model\s+\w+\s*{" schema.prisma | wc -l
+  # api_routes: 0          # count of route files in layers.api.root
+  # e2e_tests: 0           # tests/e2e/**/*.spec.ts
+
+# ─── Key paths ────────────────────────────────────────────────────────────────
+# Canonical paths Claude needs when creating new files or navigating.
+# Prevents it from inferring wrong paths from partial context.
+key_paths:
+  entry_point: "src/index.ts"          # or src/app/layout.tsx, main.ts, etc.
+  shared_utils: "src/lib/utils.ts"
+  # Add any paths Claude frequently gets wrong:
+  # schema: "prisma/schema.prisma"
+  # env_example: ".env.example"
+  # scripts: "scripts"

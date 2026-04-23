@@ -1,0 +1,6 @@
+{
+  "name": "release-automation",
+  "description": "Release workflow — generate changelogs, release notes (3 formats), and social content (LinkedIn/Twitter/Slack/Newsletter) from git commits",
+  "version": "1.0.0",
+  "author": { "name": "Florian Bruniaux" }
+}

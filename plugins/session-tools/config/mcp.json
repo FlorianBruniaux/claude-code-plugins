@@ -1,0 +1,48 @@
+{
+  "mcpServers": {
+    "serena": {
+      "command": "uvx",
+      "args": ["serena", "--project-root", "."],
+      "description": "Codebase indexation and session memory"
+    },
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"],
+      "description": "Library documentation lookup"
+    },
+    "sequential": {
+      "command": "npx",
+      "args": ["-y", "@anthropic/sequential-thinking-mcp"],
+      "description": "Structured multi-step reasoning"
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@anthropic/playwright-mcp"],
+      "description": "Browser automation and testing"
+    },
+    "postgres": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "postgresql://user:password@localhost:5432/database"
+      ],
+      "description": "PostgreSQL database queries"
+    },
+    "grepai": {
+      "command": "grepai",
+      "args": ["mcp-serve"],
+      "description": "Semantic code search and call graph analysis (requires Ollama)"
+    },
+    "doobidoo-memory": {
+      "command": "memory",
+      "args": ["server"],
+      "description": "Semantic memory with cross-session search (complements Serena)"
+    },
+    "kairn": {
+      "command": "python",
+      "args": ["-m", "kairn", "serve"],
+      "description": "Knowledge graph memory with biological decay — auto-expires stale info (complements doobidoo/Serena)"
+    }
+  }
+}
