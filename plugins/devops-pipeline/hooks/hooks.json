@@ -1,12 +1,43 @@
 {
-  "hooks": [
-    { "event": "PostToolUse", "matcher": "Write|Edit", "command": "bash hooks/bash/auto-format.sh", "description": "Auto-format code after edits" },
-    { "event": "PostToolUse", "matcher": "Write|Edit", "command": "bash hooks/bash/typecheck-on-save.sh", "description": "Run type check after saves" },
-    { "event": "PostToolUse", "matcher": "Write|Edit", "command": "bash hooks/bash/test-on-change.sh", "description": "Run tests when source files change" },
-    { "event": "PreToolUse", "matcher": "Bash", "command": "bash hooks/bash/pre-commit-evaluator.sh", "description": "Evaluate commit quality before committing" },
-    { "event": "PostToolUse", "matcher": "Bash", "command": "bash hooks/bash/auto-checkpoint.sh", "description": "Auto-checkpoint after significant operations" },
-    { "event": "Notification", "matcher": ".*", "command": "bash hooks/bash/notification.sh", "description": "Desktop notification on task completion" },
-    { "event": "PreToolUse", "matcher": "Bash", "command": "bash hooks/bash/setup-init.sh", "description": "Initialize session environment" },
-    { "event": "Stop", "matcher": ".*", "command": "bash hooks/bash/auto-rename-session.sh", "description": "Auto-rename session based on work done" }
-  ]
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "bash hooks/bash/pre-commit-evaluator.sh" },
+          { "type": "command", "command": "bash hooks/bash/setup-init.sh" }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          { "type": "command", "command": "bash hooks/bash/auto-format.sh" },
+          { "type": "command", "command": "bash hooks/bash/typecheck-on-save.sh" },
+          { "type": "command", "command": "bash hooks/bash/test-on-change.sh" }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "bash hooks/bash/auto-checkpoint.sh" }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          { "type": "command", "command": "bash hooks/bash/notification.sh" }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "bash hooks/bash/auto-rename-session.sh" }
+        ]
+      }
+    ]
+  }
 }

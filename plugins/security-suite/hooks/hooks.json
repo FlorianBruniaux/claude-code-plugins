@@ -1,17 +1,46 @@
 {
-  "hooks": [
-    { "event": "PreToolUse", "matcher": "Bash", "command": "bash hooks/bash/dangerous-actions-blocker.sh", "description": "Block irreversible shell commands" },
-    { "event": "PreToolUse", "matcher": "Bash", "command": "bash hooks/bash/prompt-injection-detector.sh", "description": "Detect prompt injection attempts" },
-    { "event": "PreToolUse", "matcher": "Bash", "command": "bash hooks/bash/permission-request.sh", "description": "Gate sensitive operations" },
-    { "event": "PreToolUse", "matcher": "Bash", "command": "bash hooks/bash/sandbox-validation.sh", "description": "Validate sandbox constraints" },
-    { "event": "PreToolUse", "matcher": "Edit|Write", "command": "bash hooks/bash/file-guard-mcp.sh", "description": "MCP config integrity check" },
-    { "event": "PreToolUse", "matcher": "Edit|Write", "command": "bash hooks/bash/claudemd-scanner.sh", "description": "Scan CLAUDE.md for unsafe patterns" },
-    { "event": "PreToolUse", "matcher": "Edit|Write", "command": "bash hooks/bash/privacy-warning.sh", "description": "Warn before writing sensitive data" },
-    { "event": "PostToolUse", "matcher": "Write|Edit", "command": "bash hooks/bash/pre-commit-secrets.sh", "description": "Scan for secrets before commit" },
-    { "event": "PostToolUse", "matcher": "Bash", "command": "bash hooks/bash/output-secrets-scanner.sh", "description": "Scan tool output for exposed secrets" },
-    { "event": "PostToolUse", "matcher": "Bash", "command": "bash hooks/bash/security-check.sh", "description": "Quick security check after bash execution" },
-    { "event": "PostToolUse", "matcher": "Bash", "command": "bash hooks/bash/repo-integrity-scanner.sh", "description": "Detect unexpected repo changes" },
-    { "event": "PostToolUse", "matcher": "Edit|Write", "command": "bash hooks/bash/governance-enforcement-hook.sh", "description": "Enforce project governance rules" },
-    { "event": "PostToolUse", "matcher": "Bash", "command": "bash hooks/bash/security-gate.sh", "description": "Block deployment if security checks fail" }
-  ]
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "bash hooks/bash/dangerous-actions-blocker.sh" },
+          { "type": "command", "command": "bash hooks/bash/prompt-injection-detector.sh" },
+          { "type": "command", "command": "bash hooks/bash/permission-request.sh" },
+          { "type": "command", "command": "bash hooks/bash/sandbox-validation.sh" }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          { "type": "command", "command": "bash hooks/bash/file-guard-mcp.sh" },
+          { "type": "command", "command": "bash hooks/bash/claudemd-scanner.sh" },
+          { "type": "command", "command": "bash hooks/bash/privacy-warning.sh" }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "bash hooks/bash/output-secrets-scanner.sh" },
+          { "type": "command", "command": "bash hooks/bash/security-check.sh" },
+          { "type": "command", "command": "bash hooks/bash/repo-integrity-scanner.sh" },
+          { "type": "command", "command": "bash hooks/bash/security-gate.sh" }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          { "type": "command", "command": "bash hooks/bash/pre-commit-secrets.sh" }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          { "type": "command", "command": "bash hooks/bash/governance-enforcement-hook.sh" }
+        ]
+      }
+    ]
+  }
 }

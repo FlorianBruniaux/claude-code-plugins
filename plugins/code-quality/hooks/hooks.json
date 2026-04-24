@@ -1,7 +1,21 @@
 {
-  "hooks": [
-    { "event": "PostToolUse", "matcher": "Write|Edit", "command": "bash hooks/bash/output-validator.sh", "description": "Validate output quality after edits" },
-    { "event": "PostToolUse", "matcher": "Write|Edit", "command": "bash hooks/bash/governance-enforcement-hook.sh", "description": "Enforce SOLID and coding standards" },
-    { "event": "PreToolUse", "matcher": "Bash", "command": "bash hooks/bash/validate-changes.sh", "description": "Evaluate changes before committing" }
-  ]
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "bash hooks/bash/validate-changes.sh" }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          { "type": "command", "command": "bash hooks/bash/output-validator.sh" },
+          { "type": "command", "command": "bash hooks/bash/governance-enforcement-hook.sh" }
+        ]
+      }
+    ]
+  }
 }
