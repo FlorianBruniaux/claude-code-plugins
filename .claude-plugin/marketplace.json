@@ -43,6 +43,15 @@
       "license": "MIT"
     },
     {
+      "name": "hermes-tweet",
+      "source": "./plugins/hermes-tweet",
+      "description": "Hermes Agent X/Twitter workflow skill for research, reading, and approval-gated posting with Hermes Tweet",
+      "author": { "name": "Xquik" },
+      "keywords": ["hermes", "twitter", "x", "social", "automation"],
+      "category": "productivity",
+      "license": "MIT"
+    },
+    {
       "name": "code-quality",
       "source": "./plugins/code-quality",
       "description": "Code quality pipeline — SOLID refactoring, TDD workflow, GoF design patterns, performance optimization, and 6 specialist review agents",
