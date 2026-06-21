@@ -1,6 +1,6 @@
 # Claude Code Plugins
 
-Production-ready plugins for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) from the [Ultimate Guide](https://github.com/FlorianBruniaux/claude-code-ultimate-guide). 212 templates across 8 focused plugins.
+Production-ready plugins for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) from the [Ultimate Guide](https://github.com/FlorianBruniaux/claude-code-ultimate-guide). 213 templates across 9 focused plugins.
 
 ## StarMapper
 
@@ -22,6 +22,7 @@ claude plugin marketplace add FlorianBruniaux/claude-code-plugins
 claude plugin install security-suite
 claude plugin install devops-pipeline
 claude plugin install release-automation
+claude plugin install hermes-tweet
 claude plugin install code-quality
 claude plugin install pr-workflow
 claude plugin install session-tools
@@ -38,6 +39,7 @@ That's it. Hooks are auto-wired, no manual configuration needed.
 | [security-suite](./plugins/security-suite/) | OWASP auditing, cyber-defense pipeline, 13 protective hooks | 29 | 1.0.0 |
 | [devops-pipeline](./plugins/devops-pipeline/) | CI/CD, git worktrees, deploy automation, GitHub Actions | 50+ | 1.0.0 |
 | [release-automation](./plugins/release-automation/) | Changelog, release notes (3 formats), social content | 20+ | 1.0.0 |
+| [hermes-tweet](./plugins/hermes-tweet/) | Hermes Agent X/Twitter research, reading, approval-gated posting | 1 | 0.1.6 |
 | [code-quality](./plugins/code-quality/) | SOLID refactoring, TDD, GoF patterns, 6 review agents | 30 | 1.0.0 |
 | [pr-workflow](./plugins/pr-workflow/) | Planning gates, PR/issue triage, handoffs | 23 | 1.0.0 |
 | [session-tools](./plugins/session-tools/) | ccboard monitoring, voice refinement, 11 session hooks | 40+ | 1.0.0 |
@@ -75,6 +77,16 @@ From `git log` to published release notes and social posts in one command. Gener
 **Commands**: `/release-notes`, `/commit`
 
 **Skills**: release-notes-generator, guide-recap
+
+---
+
+### hermes-tweet
+
+Hermes Agent X/Twitter workflow skill for social research, post and account reading, and approval-gated publishing with [Hermes Tweet](https://github.com/Xquik-dev/hermes-tweet).
+
+**Skills**: hermes-tweet
+
+**Tools covered**: `tweet_explore`, `tweet_read`, `tweet_action`
 
 ---
 
