@@ -55,7 +55,7 @@ scan_file() {
     fi
 
     for pattern in "${SUSPICIOUS_PATTERNS[@]}"; do
-        if grep -qiE "$pattern" "$file" 2>/dev/null; then
+        if grep -qiE -e "$pattern" "$file" 2>/dev/null; then
             WARNINGS+=("Suspicious pattern in $file: matches '$pattern'")
         fi
     done
@@ -66,7 +66,10 @@ scan_file() {
     fi
 
     # Check for uncommon Unicode characters (potential homoglyph attack)
-    if grep -P '[^\x00-\x7F]' "$file" 2>/dev/null | grep -qiE "instruction|ignore|run|execute"; then
+    # Portability note: BSD grep (macOS) has no -P (PCRE). Uses perl
+    # instead, already present on macOS and Linux, with the same
+    # \x00-\x7F syntax.
+    if perl -ne 'print if /[^\x00-\x7F]/' "$file" 2>/dev/null | grep -qiE "instruction|ignore|run|execute"; then
         WARNINGS+=("Warning: $file contains non-ASCII characters near sensitive keywords")
     fi
 }

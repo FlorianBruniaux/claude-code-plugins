@@ -15,28 +15,57 @@
 
 set -euo pipefail
 
+# Context: this is a pre-commit hook (uses git diff --cached); outside a git
+# repo (e.g. running as PostToolUse:Edit under ~/.claude) there are no staged
+# files to check.
+if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    exit 0
+fi
+
 # Colors
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Secret patterns (extended regex)
-declare -A PATTERNS=(
-    ["OpenAI API Key"]="sk-[A-Za-z0-9]{48}"
-    ["GitHub Token (ghp)"]="ghp_[A-Za-z0-9]{36}"
-    ["GitHub Token (gho)"]="gho_[A-Za-z0-9]{36}"
-    ["GitHub Token (ghu)"]="ghu_[A-Za-z0-9]{36}"
-    ["GitHub Token (ghs)"]="ghs_[A-Za-z0-9]{36}"
-    ["GitHub Token (ghr)"]="ghr_[A-Za-z0-9]{36}"
-    ["AWS Access Key"]="AKIA[A-Z0-9]{16}"
-    ["AWS Secret Key"]="[A-Za-z0-9/+=]{40}"
-    ["Anthropic API Key"]="sk-ant-[A-Za-z0-9-]{95,}"
-    ["Generic API Key"]="api[_-]?key[\"']?\s*[:=]\s*[\"']?[A-Za-z0-9]{20,}"
-    ["Generic Secret"]="secret[\"']?\s*[:=]\s*[\"']?[A-Za-z0-9]{20,}"
-    ["Generic Token"]="token[\"']?\s*[:=]\s*[\"']?[A-Za-z0-9]{20,}"
-    ["Database URL with Password"]="(postgres|mysql|mongodb)://[^:]+:[^@]+@"
-    ["Private Key"]="-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----"
-    ["JWT Token"]="eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}"
+# Compat: bash 3.2 (macOS default) does not support 'declare -A'
+# (associative arrays only exist from bash 4 onward). So names and
+# regexes live in two PARALLEL indexed arrays, in the same order,
+# instead of a single name->regex map.
+PATTERN_NAMES=(
+    "OpenAI API Key"
+    "GitHub Token (ghp)"
+    "GitHub Token (gho)"
+    "GitHub Token (ghu)"
+    "GitHub Token (ghs)"
+    "GitHub Token (ghr)"
+    "AWS Access Key"
+    "AWS Secret Key"
+    "Anthropic API Key"
+    "Generic API Key"
+    "Generic Secret"
+    "Generic Token"
+    "Database URL with Password"
+    "Private Key"
+    "JWT Token"
+)
+
+PATTERN_REGEXES=(
+    "sk-[A-Za-z0-9]{48}"
+    "ghp_[A-Za-z0-9]{36}"
+    "gho_[A-Za-z0-9]{36}"
+    "ghu_[A-Za-z0-9]{36}"
+    "ghs_[A-Za-z0-9]{36}"
+    "ghr_[A-Za-z0-9]{36}"
+    "AKIA[A-Z0-9]{16}"
+    "[A-Za-z0-9/+=]{40}"
+    "sk-ant-[A-Za-z0-9-]{95,}"
+    "api[_-]?key[\"']?\s*[:=]\s*[\"']?[A-Za-z0-9]{20,}"
+    "secret[\"']?\s*[:=]\s*[\"']?[A-Za-z0-9]{20,}"
+    "token[\"']?\s*[:=]\s*[\"']?[A-Za-z0-9]{20,}"
+    "(postgres|mysql|mongodb)://[^:]+:[^@]+@"
+    "-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----"
+    "eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}"
 )
 
 # Whitelisted patterns (safe to ignore)
@@ -112,11 +141,18 @@ detect_secrets() {
         local content
         content=$(git show ":$file" 2>/dev/null || continue)
 
-        # Check each pattern
-        for pattern_name in "${!PATTERNS[@]}"; do
-            local pattern="${PATTERNS[$pattern_name]}"
+        # Check each pattern (walks both arrays by the same index)
+        local pidx=0
+        while [ "$pidx" -lt "${#PATTERN_NAMES[@]}" ]; do
+            local pattern_name="${PATTERN_NAMES[$pidx]}"
+            local pattern="${PATTERN_REGEXES[$pidx]}"
+            pidx=$((pidx + 1))
             local matches
-            matches=$(echo "$content" | grep -noE "$pattern" || true)
+            # -e isolates the pattern from option parsing: some patterns
+            # (e.g. "Private Key") start with "-----", and without -e
+            # grep treats them as an unknown flag instead of a regex,
+            # failing with "unrecognized option" and never matching.
+            matches=$(echo "$content" | grep -noE -e "$pattern" || true)
 
             if [ -n "$matches" ]; then
                 # Check each match against whitelist

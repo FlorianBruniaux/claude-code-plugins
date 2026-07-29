@@ -26,18 +26,23 @@ case "$TOOL_NAME" in
 esac
 
 # Extract content to analyze based on tool type
+# CONTENT_JQ_FILTER is kept separately (plain string, no risk) so the
+# null-byte check further below can re-apply the same filter through a
+# pure pipe, without ever passing the result through a bash variable.
 CONTENT=""
+CONTENT_JQ_FILTER=""
 case "$TOOL_NAME" in
     Bash)
-        CONTENT=$(echo "$TOOL_INPUT" | jq -r '.command // empty')
+        CONTENT_JQ_FILTER='.command // empty'
         ;;
     Write|Edit)
-        CONTENT=$(echo "$TOOL_INPUT" | jq -r '.content // .new_string // empty')
+        CONTENT_JQ_FILTER='.content // .new_string // empty'
         ;;
     WebFetch)
-        CONTENT=$(echo "$TOOL_INPUT" | jq -r '.url // empty')
+        CONTENT_JQ_FILTER='.url // empty'
         ;;
 esac
+CONTENT=$(echo "$TOOL_INPUT" | jq -r "$CONTENT_JQ_FILTER")
 
 # Skip if no content to analyze
 [[ -z "$CONTENT" ]] && exit 0
@@ -169,7 +174,16 @@ fi
 
 # === NULL BYTE INJECTION ===
 # Null bytes can truncate strings and bypass security checks
-if echo "$CONTENT" | grep -qP '\x00'; then
+# Portability note: BSD grep (macOS) has no -P (PCRE), so 'grep -qP' always
+# fails with "invalid option -- P". On top of that, bash can NEVER retain a
+# real \0 inside a variable (it is silently dropped on assignment via $()),
+# so checking "$CONTENT" for \0 would never work on ANY system, even with
+# GNU grep. The correct check compares stream size (via pipe, never
+# materialized into a variable) before and after stripping null bytes,
+# using LC_ALL=C to operate byte by byte.
+CONTENT_RAW_SIZE=$(echo "$TOOL_INPUT" | jq -r "$CONTENT_JQ_FILTER" | wc -c | tr -d ' ')
+CONTENT_STRIPPED_SIZE=$(echo "$TOOL_INPUT" | jq -r "$CONTENT_JQ_FILTER" | LC_ALL=C tr -d '\000' | wc -c | tr -d ' ')
+if [ "$CONTENT_RAW_SIZE" != "$CONTENT_STRIPPED_SIZE" ]; then
     echo "BLOCKED: Null byte detected - potential truncation attack" >&2
     exit 2
 fi
@@ -185,7 +199,7 @@ NESTED_CMD_PATTERNS=(
 )
 
 for pattern in "${NESTED_CMD_PATTERNS[@]}"; do
-    if echo "$CONTENT" | grep -qE "$pattern"; then
+    if echo "$CONTENT" | grep -qE -e "$pattern"; then
         echo "BLOCKED: Nested command execution detected - potential bypass attempt" >&2
         exit 2
     fi
