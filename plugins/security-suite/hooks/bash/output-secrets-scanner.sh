@@ -41,55 +41,106 @@ if [[ -z "$TOOL_OUTPUT" ]]; then
 fi
 
 # Secret patterns to detect
-declare -A SECRET_PATTERNS=(
+# Compat: bash 3.2 (macOS default) does not support 'declare -A'
+# (associative arrays only exist from bash 4 onward). So names and
+# regexes live in two PARALLEL indexed arrays, in the same order,
+# instead of a single name->regex map.
+SECRET_NAMES=(
     # API Keys
-    ["OpenAI API Key"]="sk-[a-zA-Z0-9]{20,}"
-    ["Anthropic API Key"]="sk-ant-[a-zA-Z0-9]{20,}"
-    ["AWS Access Key"]="AKIA[0-9A-Z]{16}"
-    ["AWS Secret Key"]="[0-9a-zA-Z/+]{40}"
-    ["GCP API Key"]="AIza[0-9A-Za-z_-]{35}"
-    ["Azure Key"]="[a-zA-Z0-9]{32,}"
-    ["Stripe Key"]="(sk|pk)_(live|test)_[0-9a-zA-Z]{24,}"
-    ["Twilio Key"]="SK[a-f0-9]{32}"
-    ["SendGrid Key"]="SG\.[a-zA-Z0-9_-]{22}\.[a-zA-Z0-9_-]{43}"
-    ["Slack Token"]="xox[baprs]-[0-9a-zA-Z-]{10,}"
-    ["Discord Token"]="[MN][A-Za-z0-9]{23,}\.[A-Za-z0-9-_]{6}\.[A-Za-z0-9-_]{27}"
+    "OpenAI API Key"
+    "Anthropic API Key"
+    "AWS Access Key"
+    "AWS Secret Key"
+    "GCP API Key"
+    "Azure Key"
+    "Stripe Key"
+    "Twilio Key"
+    "SendGrid Key"
+    "Slack Token"
+    "Discord Token"
 
     # Tokens
-    ["GitHub Token"]="(ghp|gho|ghu|ghs|ghr)_[a-zA-Z0-9]{36,}"
-    ["GitLab Token"]="glpat-[a-zA-Z0-9_-]{20,}"
-    ["NPM Token"]="npm_[a-zA-Z0-9]{36}"
-    ["PyPI Token"]="pypi-[a-zA-Z0-9_-]{50,}"
-    ["JWT Token"]="eyJ[a-zA-Z0-9_-]*\.eyJ[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]*"
-    ["Heroku API Key"]="[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+    "GitHub Token"
+    "GitLab Token"
+    "NPM Token"
+    "PyPI Token"
+    "JWT Token"
+    "Heroku API Key"
 
     # Private Keys
-    ["Private Key"]="-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----"
-    ["PGP Private Key"]="-----BEGIN PGP PRIVATE KEY BLOCK-----"
+    "Private Key"
+    "PGP Private Key"
 
     # Database
-    ["Database URL with Password"]="(postgres|mysql|mongodb)://[^:]+:[^@]+@"
-    ["Redis URL with Password"]="redis://:[^@]+@"
+    "Database URL with Password"
+    "Redis URL with Password"
 
     # Generic (58% of leaked secrets are "generic" - GitGuardian 2025)
-    ["Generic API Key"]="(api[_-]?key|apikey|api[_-]?secret)['\"]?\s*[:=]\s*['\"]?[a-zA-Z0-9_-]{20,}"
-    ["Generic Secret"]="(secret|password|passwd|pwd)['\"]?\s*[:=]\s*['\"]?[^\s'\"]{8,}"
-    ["Generic Token"]="(token|auth[_-]?token|access[_-]?token|bearer)['\"]?\s*[:=]\s*['\"]?[a-zA-Z0-9_-]{20,}"
-    ["Private Key Inline"]="['\"]?-----BEGIN[^-]+PRIVATE KEY-----"
+    "Generic API Key"
+    "Generic Secret"
+    "Generic Token"
+    "Private Key Inline"
 
     # Environment Variable Leakage
-    ["Env Dump Command"]="^(env|printenv|set)$"
-    ["Proc Environ Access"]="/proc/self/environ|/proc/[0-9]+/environ"
+    "Env Dump Command"
+    "Proc Environ Access"
+)
+
+SECRET_REGEXES=(
+    # API Keys
+    "sk-[a-zA-Z0-9]{20,}"
+    "sk-ant-[a-zA-Z0-9]{20,}"
+    "AKIA[0-9A-Z]{16}"
+    "[0-9a-zA-Z/+]{40}"
+    "AIza[0-9A-Za-z_-]{35}"
+    "[a-zA-Z0-9]{32,}"
+    "(sk|pk)_(live|test)_[0-9a-zA-Z]{24,}"
+    "SK[a-f0-9]{32}"
+    "SG\.[a-zA-Z0-9_-]{22}\.[a-zA-Z0-9_-]{43}"
+    "xox[baprs]-[0-9a-zA-Z-]{10,}"
+    "[MN][A-Za-z0-9]{23,}\.[A-Za-z0-9-_]{6}\.[A-Za-z0-9-_]{27}"
+
+    # Tokens
+    "(ghp|gho|ghu|ghs|ghr)_[a-zA-Z0-9]{36,}"
+    "glpat-[a-zA-Z0-9_-]{20,}"
+    "npm_[a-zA-Z0-9]{36}"
+    "pypi-[a-zA-Z0-9_-]{50,}"
+    "eyJ[a-zA-Z0-9_-]*\.eyJ[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]*"
+    "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+
+    # Private Keys
+    "-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----"
+    "-----BEGIN PGP PRIVATE KEY BLOCK-----"
+
+    # Database
+    "(postgres|mysql|mongodb)://[^:]+:[^@]+@"
+    "redis://:[^@]+@"
+
+    # Generic (58% of leaked secrets are "generic" - GitGuardian 2025)
+    "(api[_-]?key|apikey|api[_-]?secret)['\"]?\s*[:=]\s*['\"]?[a-zA-Z0-9_-]{20,}"
+    "(secret|password|passwd|pwd)['\"]?\s*[:=]\s*['\"]?[^\s'\"]{8,}"
+    "(token|auth[_-]?token|access[_-]?token|bearer)['\"]?\s*[:=]\s*['\"]?[a-zA-Z0-9_-]{20,}"
+    "['\"]?-----BEGIN[^-]+PRIVATE KEY-----"
+
+    # Environment Variable Leakage
+    "^(env|printenv|set)$"
+    "/proc/self/environ|/proc/[0-9]+/environ"
 )
 
 DETECTED_SECRETS=()
 
-# Check each pattern
-for secret_type in "${!SECRET_PATTERNS[@]}"; do
-    pattern="${SECRET_PATTERNS[$secret_type]}"
-    if echo "$TOOL_OUTPUT" | grep -qiE "$pattern" 2>/dev/null; then
+# Check each pattern (walks both arrays by the same index)
+i=0
+while [ "$i" -lt "${#SECRET_NAMES[@]}" ]; do
+    secret_type="${SECRET_NAMES[$i]}"
+    pattern="${SECRET_REGEXES[$i]}"
+    # -e isolates the pattern from option parsing: patterns like
+    # "Private Key" start with "-----", and without -e grep treats them
+    # as an unknown flag instead of a regex, never matching anything.
+    if echo "$TOOL_OUTPUT" | grep -qiE -e "$pattern" 2>/dev/null; then
         DETECTED_SECRETS+=("$secret_type")
     fi
+    i=$((i + 1))
 done
 
 # If secrets detected, warn via systemMessage

@@ -138,7 +138,12 @@ check_package_json() {
     )
 
     for pattern in "${SUSPICIOUS_PATTERNS[@]}"; do
-        if echo "$scripts" | grep -qiE "$pattern"; then
+        # -e isolates the pattern from option parsing: if a pattern ever
+        # starts with "-", grep would otherwise treat it as an unknown
+        # flag and error out instead of matching, silently skipping the
+        # check. No current pattern here starts with "-", but this keeps
+        # the loop safe if one is added later (preventive hardening).
+        if echo "$scripts" | grep -qiE -e "$pattern"; then
             echo "BLOCKED: Suspicious npm script detected in $file: pattern '$pattern'" >&2
             return 1
         fi

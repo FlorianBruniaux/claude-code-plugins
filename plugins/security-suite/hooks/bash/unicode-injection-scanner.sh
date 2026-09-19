@@ -50,15 +50,21 @@ case "$TOOL_NAME" in
 esac
 
 # Extract content to analyze
+# CONTENT_JQ_FILTER is kept separately (plain string) so the null-byte
+# check further below can re-apply the same filter through a pure pipe,
+# without going through the CONTENT variable (bash silently drops \0 on
+# assignment via $()).
 CONTENT=""
+CONTENT_JQ_FILTER=""
 case "$TOOL_NAME" in
     Write)
-        CONTENT=$(echo "$TOOL_INPUT" | jq -r '.content // empty')
+        CONTENT_JQ_FILTER='.content // empty'
         ;;
     Edit)
-        CONTENT=$(echo "$TOOL_INPUT" | jq -r '.new_string // empty')
+        CONTENT_JQ_FILTER='.new_string // empty'
         ;;
 esac
+CONTENT=$(echo "$TOOL_INPUT" | jq -r "$CONTENT_JQ_FILTER")
 
 # Skip if no content
 [[ -z "$CONTENT" ]] && exit 0
@@ -68,7 +74,7 @@ esac
 # U+200C Zero Width Non-Joiner
 # U+200D Zero Width Joiner
 # U+FEFF Byte Order Mark (when not at start)
-if echo "$CONTENT" | grep -qP '[\x{200B}-\x{200D}\x{FEFF}]'; then
+if echo "$CONTENT" | perl -C -0777 -ne 'exit(/[\x{200B}-\x{200D}\x{FEFF}]/ ? 0 : 1)'; then
     echo "BLOCKED: Zero-width characters detected (U+200B-U+200D or BOM). These can hide malicious instructions." >&2
     exit 2
 fi
@@ -80,7 +86,7 @@ fi
 # U+202D Left-to-Right Override
 # U+202E Right-to-Left Override (most dangerous - reverses text display)
 # U+2066-U+2069 Isolate controls
-if echo "$CONTENT" | grep -qP '[\x{202A}-\x{202E}\x{2066}-\x{2069}]'; then
+if echo "$CONTENT" | perl -C -0777 -ne 'exit(/[\x{202A}-\x{202E}\x{2066}-\x{2069}]/ ? 0 : 1)'; then
     echo "BLOCKED: Bidirectional text override detected (U+202A-U+202E). These can disguise malicious commands." >&2
     exit 2
 fi
@@ -97,7 +103,14 @@ fi
 
 # === NULL BYTES ===
 # \x00 can truncate strings and bypass security checks
-if echo "$CONTENT" | grep -qP '\x00'; then
+# Portability note: same reasoning as prompt-injection-detector.sh - BSD
+# grep has no -P, and bash drops \0 from any variable on assignment via
+# $(), so checking "$CONTENT" would never work on any system. The correct
+# check compares stream size (via pure pipe) before/after stripping NUL,
+# using LC_ALL=C to operate byte by byte.
+CONTENT_RAW_SIZE=$(echo "$TOOL_INPUT" | jq -r "$CONTENT_JQ_FILTER" | wc -c | tr -d ' ')
+CONTENT_STRIPPED_SIZE=$(echo "$TOOL_INPUT" | jq -r "$CONTENT_JQ_FILTER" | LC_ALL=C tr -d '\000' | wc -c | tr -d ' ')
+if [ "$CONTENT_RAW_SIZE" != "$CONTENT_STRIPPED_SIZE" ]; then
     echo "BLOCKED: Null byte detected. These can cause string truncation attacks." >&2
     exit 2
 fi
@@ -105,7 +118,7 @@ fi
 # === TAG CHARACTERS ===
 # U+E0000-U+E007F are invisible "tag" characters
 # Sometimes used to embed hidden data
-if echo "$CONTENT" | grep -qP '[\x{E0000}-\x{E007F}]'; then
+if echo "$CONTENT" | perl -C -0777 -ne 'exit(/[\x{E0000}-\x{E007F}]/ ? 0 : 1)'; then
     echo "BLOCKED: Unicode tag characters detected (U+E0000-E007F). These can embed invisible data." >&2
     exit 2
 fi
@@ -114,7 +127,12 @@ fi
 # Detect potential overlong encodings (e.g., encoding '/' as C0 AF instead of 2F)
 # These can bypass path filters
 # Check for C0 or C1 bytes followed by 80-BF (overlong 2-byte sequences)
-if echo "$CONTENT" | grep -qP '[\xC0-\xC1][\x80-\xBF]'; then
+# Note: this check operates at the raw BYTE level, not on decoded
+# codepoints (that is exactly the pattern that detects malformed UTF-8).
+# That's why perl runs WITHOUT the -C flag: with -C it would decode the
+# input as UTF-8 before matching, and \xC0 would then mean codepoint
+# U+00C0 instead of the raw byte 0xC0.
+if echo "$CONTENT" | perl -0777 -ne 'exit(/[\xC0-\xC1][\x80-\xBF]/ ? 0 : 1)'; then
     echo "BLOCKED: Overlong UTF-8 sequence detected. These can bypass security filters." >&2
     exit 2
 fi
@@ -124,10 +142,10 @@ fi
 # Common in typosquatting and filter bypass
 # а (U+0430) vs a, е (U+0435) vs e, о (U+043E) vs o, etc.
 HOMOGLYPHS_FOUND=false
-if echo "$CONTENT" | grep -qP '[\x{0430}\x{0435}\x{043E}\x{0440}\x{0441}\x{0445}]'; then
+if echo "$CONTENT" | perl -C -0777 -ne 'exit(/[\x{0430}\x{0435}\x{043E}\x{0440}\x{0441}\x{0445}]/ ? 0 : 1)'; then
     HOMOGLYPHS_FOUND=true
 fi
-if echo "$CONTENT" | grep -qP '[\x{0391}-\x{03C9}]' && echo "$CONTENT" | grep -qP '[a-zA-Z]'; then
+if echo "$CONTENT" | perl -C -0777 -ne 'exit(/[\x{0391}-\x{03C9}]/ ? 0 : 1)' && echo "$CONTENT" | perl -C -0777 -ne 'exit(/[a-zA-Z]/ ? 0 : 1)'; then
     # Greek mixed with Latin
     HOMOGLYPHS_FOUND=true
 fi

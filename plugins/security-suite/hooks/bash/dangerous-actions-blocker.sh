@@ -66,7 +66,12 @@ if [[ "$TOOL_NAME" == "Bash" ]]; then
     )
 
     for pattern in "${SECRET_PATTERNS[@]}"; do
-        if echo "$COMMAND" | grep -qi "$pattern"; then
+        # -e isolates the pattern from option parsing: if a pattern ever
+        # starts with "-", grep would otherwise treat it as an unknown
+        # flag and error out instead of matching, silently skipping the
+        # check. No current pattern here starts with "-", but this keeps
+        # the loop safe if one is added later (preventive hardening).
+        if echo "$COMMAND" | grep -qi -e "$pattern"; then
             echo "BLOCKED: Potential secret detected in command: '$pattern'" >&2
             exit 2
         fi
