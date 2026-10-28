@@ -1,305 +1,264 @@
 ---
 name: eval-agents
-description: "Audit Claude Code agents defined in .claude/agents/ for description specificity, model tier appropriateness, tools scoping, and system prompt quality. Detects dispatch ambiguity between agents, flags over-permissive tool grants, and checks for human-in-the-loop patterns that break programmatic orchestration. Use when onboarding to a project with existing agents, after adding new agents to a fleet, or when an orchestrator consistently selects the wrong agent."
+description: "Audit custom subagent definitions for Claude Code (.claude/agents/*.md) and Codex (.codex/agents/*.toml): loadability against the native schema, description overlap, model tier, tool scope, and headless-safe instructions. Use when onboarding to a project with agents, after adding or importing agents, or when the parent agent delegates to the wrong agent."
 allowed-tools: Read Glob Bash Edit
 effort: medium
-argument-hint: "[path to agents dir, default: .claude/agents/]"
+argument-hint: "[path to agents dir, default: .claude/agents/ and .codex/agents/]"
 ---
 
-# Agent Evaluator
+# Agent evaluator
 
-Discover all agents in scope, score each one across five criteria, then run an interactive session to confirm or improve them one by one.
+Discover every custom agent in scope, validate it against the native schema of its host, score it, then review it with the user one agent at a time.
 
-Agents are not just scripts: they are callable units selected by orchestrators based on their description. A vague description silently breaks multi-agent workflows. The goal here is not just scoring; it is leaving every agent correctly scoped, correctly modeled, and safe to call from an orchestrator.
+Agents are selected by the parent agent from their `description`. A vague or overlapping description makes delegation unpredictable, so overlap is a correctness defect, not a style issue. The goal is to leave every agent loadable, distinct, correctly modeled, and safe to delegate to.
 
-## When to Use
+## When to use
 
-- First time auditing an agent fleet before wiring it into an orchestration pipeline
-- An orchestrator keeps selecting the wrong agent for a task
-- After copying agents from another project or importing a plugin
-- A new agent was added; checking whether it conflicts with existing ones
-- Periodic hygiene: "do all these agents still do something distinct?"
+- Auditing an agent fleet before wiring it into a delegation or orchestration workflow
+- The parent agent keeps delegating to the wrong agent, or never delegates
+- After copying agents from another project or installing a plugin
+- A new agent was added and may collide with existing ones
+- Periodic hygiene: do all these agents still do something distinct?
 
-## Key Concepts
+Not for: skills (`eval-skills`), hooks (`eval-hooks`), Claude Code rules (`eval-rules`), or a cross-host configuration health report (`eval-agent-config`).
 
-### Agent file locations
+## Host reference
 
-| Location | Scope | Committed? |
+### Claude Code: where agents load
+
+Claude Code picks the definition from the highest-priority location when several share a `name`:
+
+| Priority | Location | Scope |
 |---|---|---|
-| `.claude/agents/<name>.md` | Project (flat file) | Yes |
-| `.claude/agents/<name>/AGENT.md` | Project (directory-based) | Yes |
-| `~/.claude/agents/<name>.md` | User-level | No |
-| Plugin `agents/*.md` | Per plugin | Yes (in plugin) |
+| 1 | Managed settings directory, `.claude/agents/` | Organization |
+| 2 | `--agents` CLI flag (JSON, or a JSON file path with `-p`) | Current session |
+| 3 | `.claude/agents/` | Project |
+| 4 | `~/.claude/agents/` | User |
+| 5 | Plugin `agents/` directory | Where the plugin is enabled |
 
-Both flat files and directory-based agents are valid. The agent name is always the filename or directory name, not the `name:` field in frontmatter (though they should match).
+- `.claude/agents/` and `~/.claude/agents/` are scanned recursively. Subfolders do not change identity.
+- Project agents are discovered by walking up from the working directory; every `.claude/agents/` up to the repository root is scanned, and the definition closest to the working directory wins.
+- Directories added with `--add-dir` or `/add-dir` also contribute their `.claude/agents/`.
+- Plugin subfolders become part of the scoped identifier: `agents/review/security.md` in plugin `my-plugin` registers as `my-plugin:review:security`.
 
-### Frontmatter fields
+### Claude Code: files the runtime skips silently
 
-| Field | Required | Notes |
-|---|---|---|
-| `name` | No | Display label. The runtime key is always the filename/directory. |
-| `description` | Yes (for dispatch) | Used by orchestrators to select agents. Vague = wrong agent selected. |
-| `model` | No | Defaults to session model if absent. Explicit is always better. |
-| `tools` / `allowed-tools` | No | Both spellings parse correctly. Defaults to session tools if absent (risky). |
-| `disallowed-tools` | No | Blocks specific tools even if granted by the session. |
-| `effort` | No | `low`, `medium`, `high`, `xhigh`, `max`. Overrides session effort. |
-| `context` | No | `fork` runs the agent in isolated subagent context. |
-| `argument-hint` | No | Hint shown during autocomplete. |
+- No `name`: treated as documentation kept beside the agents.
+- Opening `---` not on the first line: read as having no frontmatter.
+- `name` starting with `-` or containing `:`: skipped, error in the debug log.
+- `name` without `description`: skipped.
+- YAML that does not parse: skipped. A plugin agent without `name`, or with unparseable frontmatter, still loads under its filename.
 
-### Why description quality matters more for agents than for skills
+"Does not parse" means Claude Code's own parser, which accepts some frontmatter a strict YAML library rejects, such as an unquoted multi-line `description` whose lines contain `: `. Decide with `claude plugin validate <agents directory>` (v2.1.233 or later) or with the session's agent list (`/agents`), never with a strict YAML library alone. A file that only a strict parser rejects loads: report it as a portability warning (other tools may reject it) and suggest a `>` block scalar.
 
-Skills are invoked by humans typing a slash command. Agents are selected programmatically by orchestrators comparing all candidate descriptions against a task. Two agents with similar descriptions produce non-deterministic selection; the orchestrator will flip between them across runs, giving inconsistent results. Description overlap is a correctness bug, not a style issue.
+Two files in the same agents tree that declare the same `name`: only one loads, chosen by filesystem read order, not by a documented precedence. `/doctor` reports them.
 
-Good agent description pattern:
-```
-"Use when X and NOT Y. Handles Z. Returns [format]."
-```
+### Claude Code: frontmatter fields
 
-Weak pattern:
-```
-"Helps with code quality and review."
-```
+Only `name` and `description` are required. Field names are camelCase and must match exactly; an unknown field is ignored without an error.
 
-### Model tier selection
-
-| Task type | Model | Signals |
-|---|---|---|
-| Mechanical: lookup, pattern match, binary pass/fail | `haiku` | grep results, count files, extract value, apply template |
-| Judgment: review, analyze, write, debug (bounded scope) | `sonnet` | code review, test writing, documentation, diagnosis |
-| Deep synthesis: architecture, adversarial, cross-system | `opus` | security audit, ADR generation, system design review |
-
-Using `opus` for a task that only needs `haiku` burns 20-50x more tokens per call. In a pipeline that calls an agent 100 times, that becomes expensive. Flag model-task mismatches both directions: under-powered (produces shallow output) and over-powered (wastes budget).
-
-### Human-in-the-loop anti-patterns
-
-Agents called from orchestrators run headlessly. Any system prompt instruction that assumes a human is watching will silently break or stall the pipeline:
-
-| Anti-pattern | What breaks |
+| Field | Notes |
 |---|---|
-| "Ask the user for clarification" | Agent blocks waiting for input that never comes |
-| "Confirm before deleting" | Same: no confirmation possible |
-| "Show results and wait for approval" | Orchestrator receives no output, times out |
-| "If unsure, ask" | Produces empty output instead of best-effort result |
+| `name` | Required. Unique identity; hooks receive it as `agent_type`. The filename does not have to match. |
+| `description` | Required. When the parent should delegate. |
+| `tools` | Comma-separated string or YAML list. Omitted: inherits every tool available to subagents. No resolvable entry: the agent usually fails to launch. |
+| `disallowedTools` | Removed from the inherited or declared list. A specifier such as `Bash(git push *)` removes the whole tool. |
+| `model` | `sonnet`, `opus`, `haiku`, `fable`, a full model ID, or `inherit`. |
+| `permissionMode` | `default` (alias `manual`), `acceptEdits`, `auto`, `dontAsk`, `bypassPermissions`, `plan`. Ignored when the main conversation runs in `bypassPermissions`, `acceptEdits` or auto mode. |
+| `maxTurns` | Agentic turn cap; output is returned marked partial. |
+| `skills` | Skills preloaded in full at startup. |
+| `mcpServers` | Server names or inline server definitions. |
+| `hooks` | Hooks active while this agent runs; `Stop` becomes `SubagentStop`. Project agent hooks run only after workspace trust is accepted. |
+| `memory` | Persistent memory scope: `user`, `project`, or `local`. |
+| `background` | `true` keeps the agent in the background. |
+| `omitClaudeMd` | `true` launches without user, project and local CLAUDE.md files. |
+| `effort` | `low`, `medium`, `high`, `xhigh`, `max`; available levels depend on the model. |
+| `isolation` | `worktree` runs the agent in a temporary git worktree. |
+| `color` | Display color. |
+| `initialPrompt` | First user turn when the agent runs as the main session agent. |
+| `experimental` | Map; only `cacheTtl: 5m` or `1h` is read, and only from agent files. |
 
-Safe alternative: "If context is insufficient, return `{ "status": "needs_context", "missing": [...] }` and stop."
+Plugin agents ignore `hooks`, `mcpServers` and `permissionMode`; `initialPrompt` is also ignored for plugin agents.
 
----
+Flag as unrecognized (silently ignored by Claude Code): `allowed-tools`, `disallowed-tools`, `context`, `argument-hint`, and any other key not in the table. These are skill fields, not agent fields.
 
-## Scoring Criteria (15 pts per agent)
+### Claude Code: model resolution
+
+1. The per-invocation `model` parameter passed by the parent
+2. The agent's `model` frontmatter (`inherit` selects the main conversation's model)
+3. `CLAUDE_CODE_SUBAGENT_MODEL`, when set to an alias or model ID
+4. The main conversation's model
+
+`CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1` makes every agent ignore its `model` field. A family alias resolves to the main conversation's exact model when that model belongs to the same family. A value blocked by the organization's `availableModels` is substituted.
+
+### Claude Code: tools a subagent never gets
+
+The runtime removes these tools from every non-fork subagent, even when listed in `tools`: `AskUserQuestion`, `EndConversation`, `EnterPlanMode`, `ExitPlanMode` (unless `permissionMode: plan`), `ScheduleWakeup`, `WaitForMcpServers`, and `Agent` at the depth limit.
+
+### Codex: custom agents
+
+| Item | Rule |
+|---|---|
+| Location | One TOML file per agent in `~/.codex/agents/` (personal) or `.codex/agents/` (project) |
+| Required keys | `name`, `description`, `developer_instructions` |
+| Identity | `name` is the source of truth; the filename is only a convention |
+| Optional keys | Any supported `config.toml` key, such as `model`, `model_reasoning_effort`, `sandbox_mode`, `mcp_servers`, `skills.config`; omitted keys inherit from the parent session |
+| Built-in agents | `default`, `worker`, `explorer`; a custom agent with the same name takes precedence |
+| Global settings | `[agents]` in `config.toml`: `enabled`, `max_concurrent_threads_per_session` (legacy `max_threads`), `default_subagent_model`, `default_subagent_reasoning_effort`, `interrupt_message` |
+
+A Markdown agent with YAML frontmatter, or a TOML file using `prompt` instead of `developer_instructions`, is a Claude-shaped definition and does not satisfy the Codex schema.
+
+## Scoring criteria
+
+### Claude Code agents (15 pts)
 
 | # | Criterion | Max | What is checked |
-|---|-----------|-----|-----------------|
-| 1 | **name** | 1 | `name` field present and matches directory/file name (kebab-case) |
-| 2 | **description** | 4 | Present (1pt), contains trigger phrasing specifying WHEN to use (1pt), specific enough to distinguish from other agents in the same fleet (1pt), combined `description` text under 1,536 chars (1pt) |
-| 3 | **model** | 2 | Present (1pt), appropriate tier for task complexity using matrix above (1pt) |
-| 4 | **tools** | 3 | `tools` or `allowed-tools` present and explicit (1pt), no `*` wildcard without written justification in the system prompt (1pt), write-capable tools (`Bash`, `Edit`, `Write`) only present when the agent's task requires file mutation (1pt) |
-| 5 | **system prompt** | 5 | Has role/scope statement in first paragraph (1pt), defines task boundaries (what it does AND does not do) (1pt), specifies output format or return contract (1pt), no placeholder text or TODO comments (1pt), no human-in-the-loop patterns from the table above (1pt) |
-| Bonus | **hardening** | +1 | `effort` field present and inferred-appropriate for task complexity |
+|---|---|---|---|
+| 1 | **loadable** | 2 | Frontmatter parses for Claude Code (see above) and `name` is valid: present, no `:`, no leading `-` (1); `description` present (1). A 0 here means the runtime skips the file: stop scoring and report it as a blocker. A strict-YAML-only failure keeps the point and adds a portability warning. |
+| 2 | **description** | 3 | States when to delegate (1); distinguishable from every other agent in the same scope (1); concise, since combined descriptions above 15,000 tokens trigger a startup warning (1) |
+| 3 | **model** | 2 | Declared or deliberately inherited (1); tier fits the task (1) |
+| 4 | **tools** | 3 | `tools` explicit (1); no write-capable tool (`Bash`, `Edit`, `Write`, `NotebookEdit`) unless the task mutates files or runs commands (1); `disallowedTools` or `tools` excludes `Agent` when the agent must not delegate further (1) |
+| 5 | **system prompt** | 5 | Role and scope in the first paragraph (1); what it does and does not do (1); output or return contract (1); no placeholder or TODO (1); no instruction that requires a tool the runtime removes, such as asking the user a question (1) |
+| Bonus | **field hygiene** | +1 | No unrecognized field, no invalid field value, and no field that the agent's source ignores (for example `hooks` in a plugin agent) |
 
-**Thresholds:**
-- Good: >=12/15 (>=80%)
-- Needs work: 9-11/15 (60-79%)
-- Fix: <9/15 (<60%)
+### Codex agents (12 pts)
 
-**No-tools agents** (no `tools:` field): they inherit the session tool set, which is usually broader than needed. Treat this as 0/3 on criterion 4 and flag explicitly: unconstrained tool access in a fleet agent is a security surface.
+| # | Criterion | Max | What is checked |
+|---|---|---|---|
+| 1 | **loadable** | 3 | TOML parses (1); `name` and `description` present (1); `developer_instructions` present and non-empty (1) |
+| 2 | **description** | 3 | Same checks as Claude Code, against other Codex agents and the built-ins |
+| 3 | **model and effort** | 2 | `model` and `model_reasoning_effort` set together when the model is overridden (1); tier fits the task (1) |
+| 4 | **instructions** | 4 | Role and scope (1); boundaries (1); return contract (1); no placeholder (1) |
 
----
+**Thresholds:** Good >= 80%, Needs work 60-79%, Fix < 60%.
 
-## Execution Instructions
+### Model tier signals
+
+| Work | Claude Code | Codex (per the Codex subagent docs) |
+|---|---|---|
+| Mechanical: lookup, extraction, binary verification | `haiku` | lighter model such as `gpt-6-luna` |
+| Bounded judgment: review, debugging, tests, documentation | `sonnet` | `gpt-6-sol`, `medium` effort |
+| Cross-cutting synthesis: architecture, threat model, multi-system trade-offs | `opus` | `gpt-6-sol`, `high` or above |
+
+Flag both directions: an under-powered model for judgment work, and an over-powered model for mechanical work that runs many times. State cost from published prices instead of a fixed multiplier; for example the guide lists Opus 5.5 at $4/$20 and Haiku 5.5 at $0.10/$0.50 per million input/output tokens (prompts up to 100K tokens). Haiku 5.5 supports effort and defaults to `medium`; only the legacy Haiku 4.5 has no effort parameter, so an `effort` field on an agent pinned to Haiku 4.5 has no effect.
+
+### Human-in-the-loop anti-pattern
+
+Subagents do not get `AskUserQuestion` or plan-mode tools, and by default they run in the background. Any system prompt instruction such as "ask the user", "confirm before deleting", or "wait for approval" cannot be carried out. Safe alternative: "If context is insufficient, return `{ "status": "needs_context", "missing": [...] }` and stop."
+
+## Execution instructions
 
 ### Step 1: Discovery
 
-Find all agent files in scope:
+Resolve the scope from the argument, or default to the project plus user scope of each requested host.
+
+| Request | Run |
+|---|---|
+| Default | Steps 1-6, with the interactive review |
+| `audit-only`, or the user asks for no changes | Steps 1-4 and 6: list proposed changes instead of asking or editing |
+| More than 20 agents in scope | Triage: run Steps 1-3 and the structural checks of Step 2 on every file, score in full only the agents with a finding plus a sample of the rest, and report the others in one compact table |
 
 ```bash
-# Flat files
-find .claude/agents -maxdepth 1 -name "*.md" 2>/dev/null
+# Claude Code: every .md file, recursively (-L follows symlinked directories)
+find -L .claude/agents -name "*.md" 2>/dev/null
+find -L ~/.claude/agents -name "*.md" 2>/dev/null   # user scope, when requested
 
-# Directory-based
-find .claude/agents -name "AGENT.md" 2>/dev/null
-
-# User-level (only if requested)
-find ~/.claude/agents -name "*.md" 2>/dev/null
+# Codex: one TOML file per agent
+find -L .codex/agents -name "*.toml" 2>/dev/null
+find -L ~/.codex/agents -name "*.toml" 2>/dev/null  # user scope, when requested
 ```
 
-If an argument was passed (e.g., `/eval-agents examples/agents/`), use that path instead.
+Also list nested `.claude/agents/` directories between the working directory and the repository root.
 
-Build a flat list of agent records:
-- `source_file`: path to the `.md` file
-- `agent_name`: directory name or filename stem
-- `model`: declared model or `(inherits session)`
-- `tools`: list of declared tools or `(inherits session)`
-- `description_length`: character count of `description` field
-- `system_prompt_length`: line count of body after frontmatter
+When a `ctxharness doctor --format json` report generated during this task is available, every agents-layer finding it reports must appear in the audit.
 
-If no agents are found, report it and stop.
+Done when: every candidate file is listed with its host and scope, or the report states that no agent directory exists and stops.
 
-### Step 2: Parse and classify
+### Step 2: Parse and check loadability
 
-For each agent:
-1. Read the full file
-2. Extract YAML frontmatter
-3. Collect all frontmatter fields (flag any unsupported/unknown fields)
-4. Read the body: line count, presence of role statement, output format declaration
-5. Scan for human-in-the-loop anti-patterns (keyword scan: "ask the user", "confirm", "wait for approval", "if unsure ask")
+For each file, read it in full and record: host, scope, `name`, `description` length, `model`, `tools` or `(inherits)`, every other key, body or `developer_instructions` line count.
 
-### Step 3: Check description overlap
+For Claude Code, `claude plugin validate .claude/agents` (v2.1.233 or later) reports files whose frontmatter does not parse; it does not flag a parseable file with no `name`, so check that separately. It only reads files, so it is safe in `audit-only` mode.
 
-Compare descriptions pairwise across all agents in the same directory:
+Check values as well as field names:
 
-For each pair (A, B):
-- If their `description` fields share more than 3 key nouns or verbs, flag as potential dispatch conflict
-- If both use identical trigger phrasing ("Use for code review"), flag as duplicate
+- `permissionMode` is one of the documented values; anything else, such as `ask`, is not a mode.
+- `model` is an alias from the table or a full model ID; `effort`, `memory`, `isolation` and `experimental.cacheTtl` use their documented values.
+- Each `tools` and `disallowedTools` entry names a tool from the tools reference (https://code.claude.com/docs/en/tools-reference) or an MCP tool (`mcp__server__tool`). An undocumented name, such as `MultiEdit`, does not resolve: flag it, and flag the agent as a launch risk when no entry resolves.
+- Each `skills` entry resolves to a skill available in that scope.
 
-Report conflicts as:
-```
-⚠️ Dispatch conflict: code-reviewer.md ↔ integration-reviewer.md
-  Both describe "code review" and "quality checks"; orchestrator may conflate them.
-  Suggestion: differentiate by scope (PR diff vs full module vs API surface).
-```
+Done when: each file is classified as loadable, skipped by the runtime (with the reason from the host reference above), or unreadable, with its invalid values listed.
 
-### Step 4: Model appropriateness check
+### Step 3: Check collisions and overlap
 
-For each agent, infer the appropriate model tier from the system prompt content:
+- Same `name` twice in one Claude Code agents tree, or a Codex custom agent that shadows a built-in: report which file wins or that the choice is undefined.
+- Same `name` in the user and project scopes: the project definition wins inside that project, so the user copy is dead there. List these pairs and whether the two definitions differ.
+- Compare descriptions pairwise within each host and scope. Flag pairs that claim the same kind of request without a stated boundary.
 
-**Haiku signals** (mechanical): "extract", "count", "list", "find files matching", "output JSON with fields X Y Z", "grep for", "check if exists", verbs with no judgment required
+Done when: every collision and overlapping pair is listed with both file paths.
 
-**Sonnet signals** (judgment): "review", "analyze", "debug", "write tests", "document", "suggest improvements", "classify", bounded scope per invocation
+### Step 4: Score
 
-**Opus signals** (deep synthesis): "architect", "threat model", "security audit", "design decision", "evaluate trade-offs across", "cross-cutting", "multi-system", scope spans entire codebase or long-horizon reasoning
+Apply the host's scoring table. Infer the model tier from the system prompt and flag mismatches.
 
-Flag mismatches:
-- Declared `haiku`, inferred `sonnet` or higher: ⚠️ may produce shallow output
-- Declared `opus`, inferred `haiku`: ⚠️ burning 20-50x budget for mechanical work
+Done when: every loadable agent has a score, a status, and at most three priority fixes.
 
-### Step 5: Interactive review (core of the skill)
+### Step 5: Interactive review
 
-Process agents **one by one**. Do not batch and skip the interaction.
+Process agents one by one. Show host, scope, `name`, model, tools, score, and flagged issues, then ask:
 
-**For each agent:**
+1. Is the description specific enough to distinguish this agent? (y / rewrite)
+2. Is the model tier right? (y / change)
+3. Are the tools correctly scoped? (y / add / remove)
+4. Anything to change in the system prompt or instructions? (describe / skip)
 
-Show:
-```
-Agent: code-reviewer.md [.claude/agents/]
-model: sonnet
-tools: Read, Grep, Glob
-description: "Use for thorough code review with quality, security, and performance checks"
-System prompt: 67 lines
+Apply confirmed edits with the file editing capability and confirm each one. For an agent the user marks as stale, ask for an explicit "yes, remove it" before deleting the file.
 
-Inferred model tier: sonnet ✅
-Description specificity: ⚠️ overlaps with integration-reviewer.md on "quality checks"
-Human-in-the-loop patterns: none found ✅
-Write tools: none (read-only) ✅
-```
+Done when: every agent has a recorded answer (confirmed, edited, flagged stale, or skipped).
 
-Ask four questions:
-1. "Is the description specific enough to distinguish this agent from similar ones? (y = yes / n = rewrite)"
-2. "Is the model tier right for what this agent does? (y / change to haiku/sonnet/opus)"
-3. "Are the tools correctly scoped? (y / add / remove)"
-4. "Anything to update in the system prompt? (describe or skip)"
-
-**If the user provides changes during the interaction**: apply them using Edit, confirm each change, then move to the next agent.
-
-**For agents with no tools field:**
-
-Show:
-```
-Agent: planner.md [.claude/agents/]
-model: (inherits session)
-tools: (inherits session, UNCONSTRAINED)
-```
-
-Flag strongly: no explicit `tools` field means the agent inherits whatever the calling session has, including write access it may not need. Ask whether to add an explicit `tools:` constraint.
-
-### Step 6: Output report
-
-After all agents are reviewed:
+### Step 6: Report
 
 ```
-# Agents Audit: [project name or path]
-Date: [today] | Scanned: N agents
-
-## Summary
+# Agents Audit: [scope]
+Date: [today] | Scanned: N agents (Claude Code: X, Codex: Y) | Skipped by runtime: Z
 
 | Status | Count |
 |--------|-------|
-| ✅ Good (>=80%) | N |
-| ⚠️ Needs work (60-79%) | N |
-| ❌ Fix (<60%) | N |
-| ⚠️ Dispatch conflicts detected | N pairs |
-| ⚠️ No explicit tools field | N |
-| ✅ User confirmed useful | N |
-| ⚠️ User flagged for update | N |
-| 🗑️ User marked as stale | N |
+| Good | N |
+| Needs work | N |
+| Fix | N |
+| Skipped by runtime (blocker) | N |
+| Name collisions | N |
+| Overlapping descriptions | N pairs |
+| Unrecognized fields | N |
 
----
-
-## Per-Agent Results
-
-### code-reviewer.md (11/15 ⚠️)
-
-model: sonnet (inferred: sonnet ✅)
-tools: Read, Grep, Glob (read-only ✅)
-description length: 63 chars
+### code-reviewer.md [Claude Code, project] (12/15)
+model: sonnet (inferred: sonnet) | tools: Read, Grep, Glob
 
 | Criterion | Score | Notes |
-|-----------|-------|-------|
-| name | ✅ 1/1 | kebab-case, matches filename |
-| description | ⚠️ 2/4 | Present, trigger phrasing ok, but overlaps with integration-reviewer.md; over 1,536 chars |
-| model | ✅ 2/2 | sonnet appropriate for bounded code review |
-| tools | ✅ 3/3 | explicit, read-only, no wildcard |
-| system prompt | ⚠️ 3/5 | role statement present, boundaries defined, no output format specified, no placeholder, no human-in-the-loop patterns |
-| hardening (bonus) | ❌ 0/1 | no effort field |
+|---|---|---|
+| loadable | 2/2 | ok |
+| description | 2/3 | overlaps integration-reviewer.md on "quality checks" |
+| model | 2/2 | ok |
+| tools | 3/3 | read-only |
+| system prompt | 3/5 | no return contract; asks the user to confirm |
 
-**Priority fixes:**
-1. Narrow description to distinguish from integration-reviewer.md (scope: single file/PR diff, not API surface)
-2. Add output format contract to system prompt (e.g., returns markdown with severity table)
-3. Add `effort: medium`
-
-User feedback: description updated ✅
-System prompt: output format added ✅
-
----
+Priority fixes:
+1. Separate the description from integration-reviewer.md
+2. Replace the confirmation step with a structured "needs_context" return
 ```
 
-### Step 7: Fix Summary
+End with a change summary: files edited, agents flagged stale (not deleted without confirmation), collisions resolved.
 
-```
-## What Changed This Session
+Done when: the report lists every scanned file, including skipped ones.
 
-code-reviewer.md:
-  - Description narrowed: added "PR diff scope, not API surface"
-  - System prompt: added output format contract
-  - Added effort: medium
+## Edge cases
 
-planner.md:
-  - Added tools: Read, Write (was inheriting session tools)
-  - User confirmed model: sonnet is appropriate
-
-security-auditor.md:
-  - User flagged as stale (awaiting explicit deletion confirmation)
-
----
-N agents audited · N edits applied · N dispatch conflicts resolved · N flagged as stale
-```
-
-For any agent the user marked as stale: ask for explicit confirmation before removing the file. Never delete without a clear "yes, remove it".
-
----
-
-## Edge Cases
-
-- **No `tools:` field**: agent inherits session tools; flag as 0/3 on tools criterion, always raise in interactive step regardless of other scores
-- **`tools: "*"` wildcard**: full session access, treat as equivalent to no tools field unless the system prompt explicitly justifies why unrestricted tools are needed (e.g., a general-purpose agent)
-- **`model` field absent**: flag as ⚠️ in model criterion; add model inference note ("inferred sonnet from content signals")
-- **Description under 20 chars**: too vague to be usable for dispatch; flag as 0/4 on description criterion
-- **Description over 1,536 chars**: the runtime truncates at this limit; the tail (often the "NOT for" clarifications) gets cut silently; flag as 0/1 on the length sub-criterion
-- **System prompt under 10 lines**: likely a stub or placeholder; flag for content quality review
-- **`context: fork` without an `agent:` field**: defaults to general-purpose subagent, may not match intent; flag and ask whether a specific agent type was intended
-- **Human-in-the-loop pattern in a fork agent**: especially problematic since forked agents have no terminal to interact with; flag as ❌ on system prompt criterion 5
-- **Duplicate agent names** (same `name:` field, different files): runtime loads both, last one wins; flag immediately
-- **Agent file not readable**: report and skip (may be a permissions issue or empty file)
-- **`disallowed-tools` with a tool not in `tools`**: redundant but harmless; note it
-- **Flat `.claude/agents/` file with same stem as a subdirectory agent**: naming conflict, flag which one the runtime will use
-- **Description that says "use for everything" or "general purpose"**: acceptable only for catch-all agents placed intentionally at the bottom of a dispatch priority stack; flag others
-- **Two agents with identical `model` and `tools` but different descriptions**: may be legitimate specializations or may be redundant copies from a refactor; surface to user during interactive step
+- **`tools` omitted**: the agent inherits the subagent tool pool. Not a load error; flag it for review when the agent does not need write or shell access.
+- **`model` omitted**: resolution falls through to `CLAUDE_CODE_SUBAGENT_MODEL` or the main conversation's model. Report the effective source.
+- **`allowed-tools` present instead of `tools`**: ignored by Claude Code, so the agent inherits every tool. Flag as a high-priority fix.
+- **`effort` on a Haiku agent**: no effect; suggest removing it.
+- **Plugin agent with `hooks`, `mcpServers` or `permissionMode`**: ignored; the user must copy the agent to `.claude/agents/` or `~/.claude/agents/` to use them.
+- **Agent file in a directory created after the session started**: Claude Code does not watch it until restart; report this when a new agent "does not appear".
+- **Codex TOML that uses `prompt`**: not a Codex field; `developer_instructions` is required.
+- **Description saying "use for everything"**: acceptable only for an intentional catch-all; flag others.

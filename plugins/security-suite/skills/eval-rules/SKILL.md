@@ -1,225 +1,224 @@
 ---
 name: eval-rules
-description: "Audit .claude/rules/ files for structural correctness, glob validity, and real-world usefulness. Resolves each paths: pattern against actual project files, then asks the user whether each rule is still relevant and useful. Can update rules in-place based on answers. Use when setting up rules for the first time, debugging rules that fire too often or never, or doing a periodic rules hygiene pass."
+description: "Audit Claude Code instruction rules in .claude/rules/ and ~/.claude/rules/: frontmatter, paths glob validity against real files, symlink load status, and day-to-day usefulness, then update rules with the user. Use for first-time rules setup, rules that apply too often or never, or periodic rules hygiene. Not for Codex .rules command-approval files."
 allowed-tools: Read Glob Bash Edit
 effort: medium
 argument-hint: "[path to rules dir, default: .claude/rules/]"
 ---
 
-# Rules Evaluator
+# Rules evaluator
 
-Discover all rule files, validate their structure and glob patterns against the real project, then run an interactive session to confirm (or improve) each rule with the user.
+Discover every Claude Code rule file, validate its structure and `paths` globs against the real project, then review each rule with the user so the rules directory ends in better shape than it started.
 
-The goal is not just to score; it is to leave the rules directory in better shape than it was.
+This skill covers Claude Code instruction rules in `.claude/rules/` and `~/.claude/rules/`. It does not cover Codex `.rules` files, which are Starlark command-approval policies, not instructions. See "Codex" below.
 
-## When to Use
+## When to use
 
-- First time writing `.claude/rules/` files (validate before committing)
-- A rule seems to never trigger, or fires on every file
-- Migrating `@` imports from CLAUDE.md to path-scoped rules
-- Periodic hygiene: "are these rules still relevant to how we work?"
+- Writing `.claude/rules/` files for the first time
+- A rule never seems to apply, or applies to everything
+- Moving `@` imports from CLAUDE.md into path-scoped rules
+- Periodic hygiene: are these rules still accurate and useful?
 - After onboarding to a new codebase
 
-## Key Concepts
+## Modes
 
-| Mechanism | When it loads | Notes |
-|---|---|---|
-| `@file` in CLAUDE.md | Session start, always | Even inside a conditional sentence |
-| No `paths:` in rule | Session start, always | Same cost as @import |
-| `paths:` frontmatter | When Claude reads a matching file | Trigger = Read tool on a matched file |
-| User-level rule (`~/.claude/rules/`) | Session start, always | Applies to all projects on the machine |
+| Request | Run |
+|---|---|
+| Default | Steps 1-5, with the interactive review |
+| `audit-only`, or the user asks for no changes | Steps 1-3 and 5: list each proposed change instead of asking or editing, and omit the user-answer rows from the report |
 
-The `paths:` field is the main lever for keeping rules contextual. An always-on rule with 80 lines loads on every session even if you're fixing a typo in README.md.
+When a `ctxharness doctor --format json` report generated during this task is available, every rules-layer finding it reports must appear in the audit. The doctor checks structure only; dead patterns, breadth and content are this skill's job.
 
-Glob patterns in `paths:` support brace expansion: `"src/**/*.{ts,tsx}"` matches both `.ts` and `.tsx` files with one entry.
+## Key concepts
 
----
+| Mechanism | When it loads |
+|---|---|
+| `@file` import in CLAUDE.md | Session start |
+| Project rule without `paths` | Session start, same priority as `.claude/CLAUDE.md` |
+| Project rule with `paths` | When Claude reads a file matching a pattern, not on every tool use |
+| User rule in `~/.claude/rules/` | Applies to every project; loaded before project rules. Whether `paths` scoping applies to user rules is not documented: report it as unverified instead of assuming |
 
-## Scoring Criteria (12 pts per rule)
+- All `.md` files under `.claude/rules/` are discovered recursively.
+- `paths` is the only frontmatter field Claude Code reads from a rule; other fields are ignored without an error. It accepts a YAML list or a comma-separated string. Fields from other tools' rule formats, such as Cursor's `globs`, `alwaysApply` or `description`, are therefore ignored too: a rule scoped with `globs:` silently loads always-on.
+- If the frontmatter YAML does not parse, Claude Code ignores the frontmatter and loads the rule as if it had no `paths`, so a broken scoped rule silently becomes always-on.
+- Brace expansion works (`"src/**/*.{ts,tsx}"`). A rule's whole `paths` list shares a budget of 1,000 expanded patterns and 4 MiB; a pattern over budget is used unexpanded and its literal braces match nothing.
+- A `[` that cannot be read as a bracket expression (for example `photos [2024/**`) makes that pattern invalid: it matches nothing, the other patterns still work. Escape a literal bracket as `\[`.
+- Project rules are skipped when `project` is excluded from `--setting-sources`.
+- User rules load before project rules; neither overrides the other, so a conflict between them is a defect to resolve.
+
+### Symlinked rules
+
+- A symlink whose target is inside the working directory loads normally.
+- A symlink whose target is outside the working directory is treated like an external import: it does not load until external imports are approved for the project, and after approval only the linked rules without `paths` load.
+- A symlink to a network path (UNC share, `/net`, `/Network`) never loads. `\\wsl$` paths are not network paths.
+- Circular symlinks are detected and handled.
+- The memory documentation says the approval prompt appears only for `@path` imports, but the v2.1.284 changelog reads: "Fixed rules symlinked into `.claude/rules` from outside the project being skipped without ever showing the external-imports approval prompt". From v2.1.284, an external symlinked rule asks for the same approval; on older versions it is skipped silently. Check the running version before reporting the load status.
+
+To share rules across projects without approval, put them in `~/.claude/rules/`.
+
+## Scoring Criteria (12 pts per scoped rule)
 
 | # | Criterion | Max | What is checked |
-|---|-----------|-----|-----------------|
-| 1 | **frontmatter block** | 1 | File has YAML frontmatter (`---` delimited) |
-| 2 | **paths: field** | 2 | Present (1pt) + at least one pattern listed (1pt) |
-| 3 | **pattern validity** | 3 | Each pattern matches >= 1 file in project (up to 3 patterns checked) |
-| 4 | **scope** | 2 | Not dead (>= 1 match) + not too broad (<30% of project source files) |
-| 5 | **content quality** | 3 | Has clear header/title (1pt) + rules are specific/actionable (1pt) + under 150 lines (1pt) |
-| Bonus | **focus** | +1 | Under 15 rules in file |
+|---|---|---|---|
+| 1 | **frontmatter parses** | 1 | Frontmatter, when present, is valid YAML (a broken block turns the rule always-on) |
+| 2 | **paths field** | 2 | Present (1) + at least one non-empty pattern, as a list or comma-separated string (1) |
+| 3 | **pattern validity** | 3 | Every pattern is checked. Score 3 times the share of patterns that match at least one file and are neither invalid nor over the expansion budget, rounded down |
+| 4 | **scope** | 2 | Not dead: the union of all patterns matches at least one file (1) + not too broad: that union covers under 30% of the project files counted in Step 1 (1) |
+| 5 | **content quality** | 3 | Clear title (1) + specific, actionable rules (1) + under 150 lines (1) |
+| Bonus | **focus** | +1 | Under 15 rules in the file |
 
-**Thresholds:**
-- Good: >= 10/12 (>= 83%)
-- Needs work: 7-9/12 (58-82%)
-- Fix: < 7/12 (< 58%)
+**Always-on rules** (no `paths`): score criteria 1 and 5 only (4 pts, plus bonus), mark them `always-on`, and decide in the interactive step whether they should be scoped.
 
-**Always-on rules** (no `paths:` field): skip criteria 2, 3, 4. Score on 5 pts max. Flag with a blue marker and go through the interactive step to decide if scoping is needed.
+**User rules** (`~/.claude/rules/`): their patterns resolve against whichever project is open, so criteria 3 and 4 are `N/A` in a user-level audit. Score them only when auditing a named project.
 
----
+**Symlinked rules**: add a load-status note (`loads`, `needs external-import approval`, `loads only after approval and only if unscoped`, `never loads: network path`). A rule that cannot load gets status `Fix` regardless of score.
 
-## Execution Instructions
+**Thresholds:** Good >= 83%, Needs work 58-82%, Fix < 58%.
+
+## Execution instructions
 
 ### Step 1: Discovery
 
-Use Glob to find all rule files:
+Find rule files with the file search capability:
 
 ```
 .claude/rules/**/*.md
 ```
 
-If an argument was passed (e.g., `/eval-rules ./my-rules/`), use that path instead.
+If an argument names another path, use it. Include `~/.claude/rules/` when the user asks for the full picture.
 
-Also scan `~/.claude/rules/` for user-level rules if the user asks for a full picture (these are always-on and apply to all projects on the machine).
+Count project files for the scope percentage from what the repository actually contains, not a fixed list of extensions:
 
-Also count total source files for scope % calculation:
 ```bash
-find . \( -name "*.py" -o -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.go" -o -name "*.rs" \) \
-  ! -path "*/node_modules/*" ! -path "*/.git/*" ! -path "*/dist/*" \
-  2>/dev/null | wc -l
+git ls-files --cached --others --exclude-standard | wc -l   # inside a git repository
 ```
 
-If no `.claude/rules/` directory exists, report it and stop.
+Outside git, count files while excluding `.git`, `node_modules`, build output and other ignored directories.
+
+Claude Code matches `paths` against the files Claude reads, tracked or not. Resolve patterns in Step 3 against the files on disk (excluding `.git` and `node_modules`), not against `git ls-files` alone, or a pattern that targets a gitignored directory looks dead when it is not.
+
+Check whether the rules directory is shared with the team: `git check-ignore -v .claude/rules/<file>` or `git ls-files .claude/rules | wc -l`. Report a gitignored or untracked rules directory as local-only: those rules apply on this machine and nowhere else.
+
+For every symlink in the rules tree, record the resolved target and whether it is inside the working directory or a network path.
+
+Done when: every rule file is listed with its location (project or user), symlink status and tracking status, and the project file count is recorded. If no rules directory exists, report it and stop.
 
 ### Step 2: Parse each rule
 
-For each `.md` file found:
-1. Read the full file
-2. Extract YAML frontmatter (content between first `---` and second `---`)
-3. Parse `paths:` field: collect all glob patterns as a list
-4. Classify: **conditional** (has `paths:`), **always-on** (no frontmatter or no `paths:`), or **user-level** (from `~/.claude/rules/`)
-5. Read the body: line count, presence of a clear title/header, whether rules are specific
+For each file: read it in full, extract the frontmatter, normalize `paths` (list or comma-separated string) into a list, classify the rule as scoped or always-on, and note parse errors, unknown fields (ignored by Claude Code), line count, and title. A `globs` field without `paths` is a finding of its own: the author meant to scope the rule, but it loads always-on; propose renaming the field to `paths`.
 
-### Step 3: Resolve glob patterns
+Done when: every rule has a classification and a parse status.
 
-For each rule with `paths:`, use Glob to resolve each pattern against the project:
+### Step 3: Resolve patterns
 
-- Collect total matched files per pattern
-- Show up to 10 sample paths
-- Flag dead patterns (0 matches) and broad patterns (>30% of source files)
+For each pattern, resolve it against the project files. Record the match count, up to 10 sample paths, and flag dead patterns, invalid `[` patterns, patterns whose brace expansion exceeds the budget, and rules whose pattern union matches more than 30% of the counted files. This resolver lists tracked and untracked files from git, then also walks a gitignored directory when a pattern's literal prefix points into it, so `.claude/rules/**` is not reported dead in a repository that ignores its rules. It expands braces and treats `**/` as zero or more directories; dotfiles match. The exact matcher Claude Code uses is not documented, so report a borderline result as such. Pass one rule's patterns per run:
 
-### Step 4: Interactive review (core of the skill)
-
-Process rules **one by one**. Do not batch and skip the interaction.
-
-**For each conditional rule (has `paths:`):**
-
-Show:
+```bash
+python3 - "$PROJECT_ROOT" "src/**/*.{ts,tsx}" "prisma/**" <<'EOF'
+import os, re, subprocess, sys
+root, patterns = sys.argv[1], sys.argv[2:]
+def braces(p):
+    m = re.search(r"\{([^{}]*)\}", p)
+    return [q for alt in m.group(1).split(",") for q in braces(p[:m.start()] + alt + p[m.end():])] if m else [p]
+def regex(p):
+    out, i = "", 0
+    while i < len(p):
+        if p.startswith("**/", i): out, i = out + "(?:.*/)?", i + 3
+        elif p.startswith("**", i): out, i = out + ".*", i + 2
+        elif p[i] == "*": out, i = out + "[^/]*", i + 1
+        elif p[i] == "?": out, i = out + "[^/]", i + 1
+        else: out, i = out + re.escape(p[i]), i + 1
+    return re.compile(out + r"\Z")
+def walk(top):
+    for d, ds, fs in os.walk(os.path.join(root, top)):
+        ds[:] = [x for x in ds if x not in {".git", "node_modules"}]
+        yield from (os.path.relpath(os.path.join(d, f), root) for f in fs)
+git = subprocess.run(["git", "-C", root, "ls-files", "-co", "--exclude-standard"], capture_output=True, text=True)
+files = set(git.stdout.splitlines()) if git.returncode == 0 else set(walk(""))
+base = len(files)
+for p in patterns:
+    prefix = re.split(r"[*?\[{]", p)[0].rsplit("/", 1)[0] if "/" in p else ""
+    if prefix and git.returncode == 0 and subprocess.run(["git", "-C", root, "check-ignore", "-q", prefix]).returncode == 0:
+        files |= set(walk(prefix))
+union = set()
+for p in patterns:
+    hits = {f for f in files if any(regex(q).match(f) for q in braces(p))}
+    union |= hits
+    print(f"{len(hits):6d}  {p}  {sorted(hits)[:3]}")
+print(f"union {len(union)} of {base} project files ({100 * len(union) / max(base, 1):.1f}%)")
+EOF
 ```
-Rule: payments.md [conditional]
-paths: ["**/payments/**", "src/billing/**"]
-Matches: 12 files
-  - src/payments/stripe.py
-  - src/payments/webhook.py
-  - src/billing/invoice.py
-  ... (9 more)
-```
 
-Ask three questions:
-1. "Is this scope right? (y = yes / n = needs adjustment)"
-2. "Is this rule still useful day-to-day? (y / n / unsure)"
-3. "Anything to add, remove, or update in the rule content? (describe or skip)"
+Done when: every pattern has a match count and a flag list.
 
-**For each always-on rule (no `paths:`):**
+### Step 4: Interactive review
 
-Show:
-```
-Rule: database.md [always-on, loads every session]
-Content: 91 lines, 8 rules
-```
+Process rules one by one.
 
-Ask:
-1. "This rule loads at every session. Should it stay always-on, or be scoped to specific files? (keep / scope / skip)"
-2. "Is the content still accurate and useful? (y / n)"
+For a scoped rule, show the file, its patterns, match count and samples, then ask:
 
-If the user says **scope**: help them define a `paths:` pattern based on the rule content (e.g., database rules -> `**/models/**`, `**/migrations/**`, `**/*.sql`). Propose the frontmatter block and ask for confirmation before editing.
+1. Is this scope right? (y / adjust)
+2. Is this rule still useful day to day? (y / n / unsure)
+3. Anything to add, remove or update in the content? (describe / skip)
 
-**If the user provides corrections or updates during the interaction**: apply them directly using Edit, confirm each change, then move to the next rule.
+For an always-on rule, show the file and line count, then ask:
 
-### Step 5: Output report
+1. This rule loads every session. Keep it always-on, scope it, or skip? (keep / scope / skip)
+2. Is the content still accurate and useful? (y / n)
 
-After all rules are reviewed:
+If the user chooses **scope**, propose a `paths` block derived from the rule content and apply it only after confirmation. Apply other confirmed edits directly and confirm each one. An "unsure" answer is recorded as "review in next audit" with no edit.
+
+Done when: every rule has a recorded answer (confirmed, edited, flagged stale, unsure, or skipped).
+
+### Step 5: Report
 
 ```
-# Rules Audit: [project name or path]
-Date: [today] | Scanned: N rules (X conditional, Y always-on)
-
-## Summary
+# Rules Audit: [project]
+Date: [today] | Scanned: N rules (X scoped, Y always-on, Z symlinked)
 
 | Status | Count |
 |--------|-------|
-| Good (>= 83%) | N |
-| Needs work (58-82%) | N |
-| Fix (< 58%) | N |
-| Always-on (no paths:) | N |
+| Good | N |
+| Needs work | N |
+| Fix | N |
+| Always-on | N |
+| Cannot load (symlink or network) | N |
 | User confirmed useful | N |
 | User flagged for update | N |
-| User marked as stale | N |
+| User marked stale | N |
 
----
-
-## Per-Rule Results
-
-### payments.md (11/12) [conditional]
-
+### payments.md (11/12) [scoped]
 paths: `**/payments/**`, `src/billing/**`
-Matches: 12 files (3.5% of 340 source files)
+Matches: 12 files (3.5% of 340 tracked files)
 
 | Criterion | Score | Notes |
-|-----------|-------|-------|
-| frontmatter | 1/1 | ok |
-| paths: field | 2/2 | 2 patterns |
-| pattern validity | 3/3 | All match >= 1 file |
-| scope | 2/2 | 3.5%, well-scoped |
-| content quality | 2/3 | 158 lines (over 150) |
-
-User feedback: scope confirmed ("fires exactly when we work on Stripe")
-Content: no changes needed
-
----
-
-### database.md (3/5) [always-on]
-
-No paths: field; loads at every session.
-
-| Criterion | Score | Notes |
-|-----------|-------|-------|
-| frontmatter | 0/1 | No frontmatter block |
-| content quality | 3/3 | 91 lines, specific rules, clear header |
-| focus | 1/1 | 8 rules |
-
-User feedback: scope -> added paths: ["**/models/**", "**/migrations/**", "**/*.sql"]
-Edit applied
-
----
+|---|---|---|
+| frontmatter parses | 1/1 | ok |
+| paths field | 2/2 | 2 patterns |
+| pattern validity | 3/3 | all match |
+| scope | 2/2 | well scoped |
+| content quality | 2/3 | 158 lines |
 ```
 
-### Step 6: Fix Summary
+End with a change summary: edits applied, rules flagged stale. Never delete a rule without an explicit "yes, delete it".
 
-```
-## What Changed This Session
+Done when: the report covers every rule found in Step 1.
 
-database.md:
-  - Added frontmatter with paths: ["**/models/**", "**/migrations/**", "**/*.sql"]
+## Codex
 
-testing.md:
-  - User confirmed useful, no changes
+Codex has no equivalent of `.claude/rules/`. When the request is about Codex:
 
-git-workflow.md:
-  - User flagged as stale (marked for deletion, not deleted yet, awaiting confirmation)
+- **Instructions**: Codex reads `AGENTS.md` (or `AGENTS.override.md`) from the Codex home directory, then from the project root down to the working directory, and concatenates them up to `project_doc_max_bytes` (32 KiB by default). Audit those files instead.
+- **`.rules` files** (for example `~/.codex/rules/default.rules`): these are experimental Starlark `prefix_rule()` policies that decide whether a command runs outside the sandbox (`allow`, `prompt`, `forbidden`). They are out of scope for this skill. Test them with `codex execpolicy check --pretty --rules <file> -- <command>`, and use each rule's `match` and `not_match` examples, which Codex validates when it loads the file.
 
----
-N rules audited / N edits applied / N rules flagged as stale
-```
+## Edge cases
 
-For any rule the user marked as stale or outdated: ask for explicit confirmation before deleting. Never delete without a clear "yes, delete it".
-
----
-
-## Edge Cases
-
-- **Subdirectory rules** (e.g., `.claude/rules/frontend/react.md`): discovered and processed normally
-- **Symlinked files or directories** in `.claude/rules/`: supported by design, discovered and processed normally
-- **Invalid YAML frontmatter**: report parse error, score frontmatter as 0/1
-- **Empty file**: flag as broken, skip interactive step, ask if it should be deleted
-- **Dead pattern** (0 matches): flag, suggest fix based on rule content
-- **Pattern matching >30% of files**: flag as too broad, suggest narrowing
-- **User says "unsure" about usefulness**: note it in the report, do not edit, add a comment "Review in next audit"
-- **Rules not loading as expected**: advise the user to add the `InstructionsLoaded` hook, which logs exactly which rule files load and when
+- **Subdirectory rules** (`.claude/rules/frontend/react.md`): discovered and processed normally.
+- **Symlinked rule**: apply the load-status rules above before scoring; do not assume it loads.
+- **Invalid YAML frontmatter**: score criterion 1 as 0 and warn that the rule currently loads as always-on.
+- **Empty file**: flag as broken, skip the interactive step, ask whether to delete it.
+- **Dead pattern**: flag it and suggest a fix from the rule content.
+- **Pattern matching more than 30% of files**: flag as too broad and suggest narrowing.
+- **`globs:` instead of `paths:`** (a rule written for another tool): the rule loads always-on; propose the rename, or dropping the field if always-on is the intent.
+- **Gitignored rules directory**: the rules are local-only; ask whether team sharing was intended before proposing anything else.
+- **Rule not loading as expected**: add an `InstructionsLoaded` hook; its matcher filters on the load reason (`session_start`, `nested_traversal`, `path_glob_match`, `include`, `compact`) and it logs which rule files load and when.

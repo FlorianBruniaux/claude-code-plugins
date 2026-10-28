@@ -7,13 +7,13 @@ when_to_use: "Use when cleaning up merged or stale worktrees."
 disable-model-invocation: true
 ---
 
-# Git Worktree Clean
+# Git worktree clean
 
 Batch cleanup of stale git worktrees. Safely removes merged branches, reports disk usage, and handles unmerged branches interactively.
 
 **Core principle:** Auto-clean merged worktrees, interactive review for unmerged, always report what was reclaimed.
 
-**Part of:** [Worktree Lifecycle Suite](./git-worktree.md) | [`/git-worktree`](./git-worktree.md) | [`/git-worktree-status`](./git-worktree-status.md) | [`/git-worktree-remove`](./git-worktree-remove.md)
+**Part of:** [Worktree Lifecycle Suite](../../commands/git-worktree.md) | [`/git-worktree`](../../commands/git-worktree.md) | [`/git-worktree-status`](../../commands/git-worktree-status.md) | [`/git-worktree-remove`](../../commands/git-worktree-remove.md)
 
 ## Process
 
@@ -33,7 +33,7 @@ Batch cleanup of stale git worktrees. Safely removes merged branches, reports di
 | `--all` | Include unmerged worktrees (interactive confirmation each) |
 | `--force` | Remove all worktrees without confirmation (dangerous) |
 
-## Worktree Discovery
+## Worktree discovery
 
 ```bash
 # Get main branch name
@@ -73,7 +73,7 @@ for WORKTREE in $WORKTREES; do
 done
 ```
 
-## Disk Usage Calculation
+## Disk usage calculation
 
 ```bash
 for WORKTREE in $ALL_WORKTREES; do
@@ -85,7 +85,7 @@ for WORKTREE in $ALL_WORKTREES; do
 done
 ```
 
-## Dry Run Mode
+## Dry run mode
 
 ```bash
 # --dry-run: show what would happen without making changes
@@ -107,7 +107,7 @@ echo ""
 echo "Run without --dry-run to execute."
 ```
 
-## Auto Mode (Default)
+## Auto mode (default)
 
 **Only removes merged worktrees. Safe by default.**
 
@@ -161,7 +161,7 @@ for WORKTREE in $UNMERGED_LIST; do
 done
 ```
 
-## Report Format
+## Report format
 
 **After cleanup:**
 
@@ -209,7 +209,7 @@ Would keep (1 protected):
 Potential space savings: 4.2 MB
 ```
 
-## Quick Reference
+## Quick reference
 
 | Situation | Action |
 |-----------|--------|
@@ -222,7 +222,7 @@ Potential space savings: 4.2 MB
 | Unmerged branch | Kept (default) or interactive (--all) |
 | DB branches detected | Reminder with exact commands |
 
-## Common Mistakes
+## Common mistakes
 
 **Running `--force` without `--dry-run` first**
 - Always preview with `--dry-run` before force-cleaning

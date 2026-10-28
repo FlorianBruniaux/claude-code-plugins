@@ -2,6 +2,22 @@
 
 All notable changes to claude-code-plugins are documented here.
 
+## [2.2.0] - 2026-10-28
+
+### Summary
+
+Resync with the Claude Code Ultimate Guide `examples/` catalog, which is the source of truth for these templates. A plugin file was updated only when it matched an earlier version of its guide source exactly; files carrying a local adaptation were kept.
+
+### Changed
+
+- **214 templates refreshed** across all eight plugins (agents, skills, hooks, scripts and references) to their current guide versions. `file-guard.sh` (pr-workflow) and `prompt-injection-detector.sh` (security-suite) take the guide fixes while keeping the portable `#!/usr/bin/env bash` shebang; the detector now checks decoded JSON strings for NUL bytes with `jq` instead of `grep -P`, which BSD grep on macOS does not support.
+- **51 commands migrated to skills**, as in the guide since Claude Code 2.1.3: each command whose guide source became a pointer to a skill is replaced by that skill (33 skills added, the others already present). Renamed invocations: `/ci:all`, `/ci:pipeline`, `/ci:status`, `/ci:tests` become `/ci-all`, `/ci-pipeline`, `/ci-status`, `/ci-tests`; the handoff commands become `/handoff-create`, `/handoff-resume`, `/handoff-update`; the plan pipeline steps become `/plan-pipeline-start`, `/plan-pipeline-ceo-review`, `/plan-pipeline-eng-review`, `/plan-pipeline-execute`, `/plan-pipeline-validate`. The README lists them as skills.
+- Plugin versions: session-summary 3.1.0, the seven others 1.1.0; marketplace 2.2.0.
+
+### Kept as local adaptations
+
+- `learning-capture.sh` (ai-methodology), `governance-enforcement-hook.sh` (security-suite) and `session-summary-config.sh` (session-summary) differ from every guide version and stay as they were. Six scripts whose only difference is the portable shebang are unchanged.
+
 ## [2.1.0] - 2026-06-04
 
 ### Summary

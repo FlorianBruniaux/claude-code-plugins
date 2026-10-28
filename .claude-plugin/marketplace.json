@@ -3,7 +3,7 @@
   "owner": { "name": "Florian Bruniaux" },
   "metadata": {
     "description": "Production-ready Claude Code plugins from the Ultimate Guide",
-    "version": "2.1.0"
+    "version": "2.2.0"
   },
   "plugins": [
     {

@@ -4,13 +4,13 @@ description: "Progressive code exploration using tree-sitter AST — structure f
 effort: low
 ---
 
-# Smart Explore — Progressive Code Exploration
+# Smart explore: Progressive code exploration
 
 > **Skill**: Read code structure before reading code. Show Claude function signatures and types first, then let it drill into specific functions only when needed.
 
 **Inspired by**: Alex Newman (Claude-MEM) + Aider repo map pattern (validated at 40k+ stars)
 
-## The Problem
+## The problem
 
 When Claude reads files to understand a codebase, it reads everything:
 
@@ -33,7 +33,7 @@ Step 3: Who calls login()?       →  ~150 tokens (cross-reference)
 # Total: 700 tokens instead of 8,400 — 92% reduction
 ```
 
-## When to Use
+## When to use
 
 | Signal | Use smart-explore | Use standard Read |
 |--------|-------------------|-------------------|
@@ -49,7 +49,7 @@ Step 3: Who calls login()?       →  ~150 tokens (cross-reference)
 - Single-file tasks — Read is faster
 - Already know what to read — go directly
 
-## Decision Tree
+## Decision tree
 
 ```
 Exploration task?
@@ -63,9 +63,9 @@ Exploration task?
 └─ Need one specific function → Read with offset
 ```
 
-## Three Approaches (Ascending Setup)
+## Three approaches (ascending setup)
 
-### Approach A: No Setup — Progressive Reading Discipline
+### Approach A: No setup — progressive reading discipline
 
 No installation needed. Just change how you prompt Claude.
 
@@ -102,7 +102,7 @@ Never read a file start-to-finish when exploring. Always structure first.
 
 ---
 
-### Approach B: tree-sitter CLI + Extract Script
+### Approach B: tree-sitter CLI + extract script
 
 Install tree-sitter CLI and use a lightweight Python script to extract signatures.
 
@@ -116,7 +116,7 @@ brew install tree-sitter
 tree-sitter --version
 ```
 
-**Extract signatures script** — save as `~/.claude/scripts/extract-signatures.py`:
+**Extract signatures script**: save as `~/.claude/scripts/extract-signatures.py`:
 
 ```python
 #!/usr/bin/env python3
@@ -290,7 +290,7 @@ which specific functions to read, then use Read with line offset.
 
 ---
 
-### Approach C: MCP Server (Recommended for Large Projects)
+### Approach C: MCP server (recommended for large projects)
 
 For codebases over 50 files, an indexed MCP server provides faster lookups and handles cross-file references.
 
@@ -367,7 +367,7 @@ get_dependencies("auth.rs")   → what it imports
 
 ---
 
-## Workflow Examples
+## Workflow examples
 
 ### Example 1: Understand an unfamiliar module
 
@@ -437,7 +437,7 @@ Add to your project's `CLAUDE.md`:
 
 ---
 
-## Token Benchmarks (Honest)
+## Token benchmarks (honest)
 
 Measured patterns, not marketing:
 
@@ -452,7 +452,7 @@ Measured patterns, not marketing:
 
 ---
 
-## Comparison with Complementary Tools
+## Comparison with complementary tools
 
 | Tool | What it saves | When |
 |---|---|---|
@@ -496,11 +496,11 @@ python -m mcp_server_tree_sitter --help
 
 ## Resources
 
-- [Aider Repo Map Architecture](https://aider.chat/docs/repomap.html) — reference implementation (PageRank + tree-sitter)
-- [mcp-server-tree-sitter](https://github.com/wrale/mcp-server-tree-sitter) — pure MCP approach
-- [code-review-graph](https://github.com/tirth8205/code-review-graph) — PR review focus, MIT, ~2k stars
-- [jCodeMunch](https://github.com/jgravelle/jcodemunch-mcp) — symbol lookup MCP (free non-commercial)
-- [tree-sitter.github.io](https://tree-sitter.github.io/tree-sitter/) — official docs
+- [Aider Repo Map Architecture](https://aider.chat/docs/repomap.html): reference implementation (PageRank + tree-sitter)
+- [mcp-server-tree-sitter](https://github.com/wrale/mcp-server-tree-sitter): pure MCP approach
+- [code-review-graph](https://github.com/tirth8205/code-review-graph): PR review focus, MIT, ~2k stars
+- [jCodeMunch](https://github.com/jgravelle/jcodemunch-mcp): symbol lookup MCP (free non-commercial)
+- [tree-sitter.github.io](https://tree-sitter.github.io/tree-sitter/): official docs
 
 ---
 

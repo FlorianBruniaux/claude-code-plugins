@@ -62,7 +62,7 @@ That's it. Hooks are auto-wired, no manual configuration needed.
 
 Security auditing pipeline with OWASP checks, vulnerability scanning, and a 4-agent cyber-defense pipeline (anomaly detection → risk classification → threat reporting).
 
-**Commands**: `/security`, `/security-audit`, `/security-check`, `/update-threat-db`, `/sandbox-status`
+**Skills** (slash-invocable): `/security`, `/security-audit`, `/security-check`, `/update-threat-db`, `/sandbox-status`
 
 **Agents**: security-auditor, security-patcher, anomaly-detector, log-ingestor, risk-classifier, threat-reporter
 
@@ -74,7 +74,7 @@ Security auditing pipeline with OWASP checks, vulnerability scanning, and a 4-ag
 
 CI/CD automation with git worktree isolation, full deploy pipeline, canary monitoring, and auto-format/test hooks. Auto-detects Python / Node / Rust stacks.
 
-**Commands**: `/ci:all`, `/ci:pipeline`, `/ci:status`, `/ci:tests`, `/canary`, `/land-and-deploy`, `/ship`, `/git-worktree`, `/commit`
+**Skills** (slash-invocable): `/ci-all`, `/ci-pipeline`, `/ci-status`, `/ci-tests`, `/canary`, `/land-and-deploy`, `/ship`, `/git-worktree`, `/commit`
 
 **Hooks (8)**: auto-format (bash + PowerShell), test-on-change, typecheck-on-save, pre-commit-evaluator, auto-checkpoint, notification, setup-init
 
@@ -84,7 +84,7 @@ CI/CD automation with git worktree isolation, full deploy pipeline, canary monit
 
 From `git log` to published release notes and social posts in one command. Generates CHANGELOG.md entries, PR descriptions, Slack announcements, LinkedIn posts, and newsletters.
 
-**Commands**: `/release-notes`, `/commit`
+**Skills** (slash-invocable): `/release-notes`, `/commit`
 
 **Skills**: release-notes-generator, guide-recap
 
@@ -94,7 +94,7 @@ From `git log` to published release notes and social posts in one command. Gener
 
 Code review and refactoring pipeline with 6 specialist agents and GoF design pattern reference. Enforces SOLID, detects N+1 and complexity issues, drives TDD cycles.
 
-**Commands**: `/refactor`, `/optimize`, `/generate-tests`, `/explain`, `/review-plan`, `/qa`, `/investigate`, `/sonarqube`
+**Skills** (slash-invocable): `/refactor`, `/optimize`, `/generate-tests`, `/explain`, `/review-plan`, `/qa`, `/investigate`, `/sonarqube`
 
 **Agents**: code-reviewer, refactoring-specialist, architecture-reviewer, test-writer, integration-reviewer, output-evaluator
 
@@ -104,7 +104,7 @@ Code review and refactoring pipeline with 6 specialist agents and GoF design pat
 
 Full PR lifecycle from idea to merged. CEO + Engineering planning gates enforce architecture review before any code is written. Includes backlog triage for PRs and issues.
 
-**Commands**: `/plan-start`, `/plan-ceo-review`, `/plan-eng-review`, `/plan-execute`, `/plan-validate`, `/pr`, `/review-pr`, handoff commands
+**Skills** (slash-invocable): `/plan-pipeline-start`, `/plan-pipeline-ceo-review`, `/plan-pipeline-eng-review`, `/plan-pipeline-execute`, `/plan-pipeline-validate`, `/pr`, `/review-pr`, `/handoff-create`, `/handoff-resume`, `/handoff-update`
 
 **Skills**: pr-triage, issue-triage
 
@@ -114,7 +114,7 @@ Full PR lifecycle from idea to merged. CEO + Engineering planning gates enforce 
 
 Session productivity toolkit: cost/token monitoring dashboard (ccboard), voice memo refinement, context restoration after `/clear`, and MCP integration templates.
 
-**Commands**: `/catchup`, `/session-save`, `/diagnose`, `/routines-discover`, `/autoresearch`
+**Skills** (slash-invocable): `/catchup`, `/session-save`, `/diagnose`, `/routines-discover`, `/autoresearch`
 
 **Skills**: ccboard (TUI/Web dashboard), voice-refine, token-audit, mcp-integration-reference
 
@@ -126,7 +126,7 @@ Session productivity toolkit: cost/token monitoring dashboard (ccboard), voice m
 
 Methodology advisor, 6-stage conference talk pipeline, landing page generator from any repo, skill scaffolding, and context-engineering reference patterns.
 
-**Commands**: `/methodology-advisor`, `/scaffold`, `/audit-codebase`, `/audit-agents-skills`
+**Skills** (slash-invocable): `/methodology-advisor`, `/scaffold`, `/audit-codebase`, `/audit-agents-skills`
 
 **Skills**: skill-creator, talk-pipeline (stages 1-6 + orchestrator), landing-page-generator, git-ai-archaeology, rtk-optimizer, pdf-generator
 

@@ -4,11 +4,11 @@ description: "Ready-to-use behavioral mode files for customizing Claude Code beh
 tags: [config, template, workflows]
 ---
 
-# Behavioral Modes
+# Behavioral modes
 
 Ready-to-use behavioral mode files for Claude Code. Copy to `~/.claude/` and reference in your `CLAUDE.md`.
 
-## Available Modes
+## Available modes
 
 | Mode | File | Purpose |
 |------|------|---------|
@@ -59,7 +59,7 @@ claude --learn focus:architecture
 claude --learn batch
 ```
 
-## More Modes: SuperClaude Framework
+## More modes: SuperClaude framework
 
 This guide includes only **Learning Mode**. For a complete behavioral framework with additional modes, check out [SuperClaude](https://github.com/SuperClaude-Org/SuperClaude_Framework):
 
@@ -71,12 +71,12 @@ This guide includes only **Learning Mode**. For a complete behavioral framework 
 | **Learning** | Just-in-time skill development (included here) |
 
 SuperClaude also includes:
-- `FLAGS.md` — Behavioral flags (`--delegate`, `--learn`, etc.) *Note: `--think`/`--ultrathink` are cosmetic only since v2.0.67 — thinking is now on by default with Opus 4.5*
+- `FLAGS.md` (custom behavioral markers such as `--delegate`, `--learn`). These are prompt conventions, not Claude Code CLI flags. Use `/effort` or `--effort` for reasoning settings; `ultrathink` adds an instruction without changing API effort.
 - `PRINCIPLES.md` — Engineering principles (SOLID, DRY, evidence-based)
 - `RULES.md` — Actionable rules with priority system
 - MCP server documentation (Context7, Sequential, Serena)
 
-## See Also
+## See also
 
-- [Guide Section 10.5: SuperClaude Framework](../../guide/ultimate-guide.md#105-superclaude-framework) — Full documentation
-- [SuperClaude Repository](https://github.com/SuperClaude-Org/SuperClaude_Framework) — Complete framework
+- [SuperClaude Behavioral Modes](../../guide/ultimate-guide.md#superclaude-behavioral-modes): Full documentation
+- [SuperClaude Repository](https://github.com/SuperClaude-Org/SuperClaude_Framework): Complete framework

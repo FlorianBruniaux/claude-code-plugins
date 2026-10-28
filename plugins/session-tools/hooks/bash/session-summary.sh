@@ -171,21 +171,40 @@ else
     BOLD='' DIM='' CYAN='' GREEN='' YELLOW='' RED='' RESET=''
 fi
 
-# Pricing table (per million tokens, as of 2026-02)
+# Standard API pricing per million tokens, verified 2026-09-24.
+# Source: https://platform.claude.com/docs/en/about-claude/pricing
+# Fallback estimate excludes fast-mode premiums; unknown models are unpriced.
 # Used as fallback if ccusage is unavailable
 get_pricing() {
     local model="$1"
+    model=$(printf '%s' "$model" | sed -E 's/-[0-9]{8}$//')
     local type="$2"  # input or output
 
     case "$model" in
-        claude-opus-4-6)
-            [[ "$type" == "input" ]] && echo "15.00" || echo "75.00"
+        claude-opus-5-5)
+            [[ "$type" == "input" ]] && echo "4.00" || echo "20.00"
             ;;
-        claude-sonnet-4-5)
+        claude-fable-5|claude-fable-5-1)
+            [[ "$type" == "input" ]] && echo "10.00" || echo "50.00"
+            ;;
+        claude-opus-5|claude-opus-4-8|claude-opus-4-7|claude-opus-4-6|claude-opus-4-5)
+            # Standard rate, confirmed at platform.claude.com/docs/en/about-claude/pricing.
+            # Opus 5 / 4.8 fast-mode premiums are not included here.
+            [[ "$type" == "input" ]] && echo "5.00" || echo "25.00"
+            ;;
+        claude-sonnet-4-5|claude-sonnet-4-6)
             [[ "$type" == "input" ]] && echo "3.00" || echo "15.00"
             ;;
+        claude-sonnet-5-5|claude-sonnet-5)
+            # Published rate $2/$10 for Sonnet 5.5 and Sonnet 5, checked 2026-10-27.
+            [[ "$type" == "input" ]] && echo "2.00" || echo "10.00"
+            ;;
+        claude-haiku-5-5)
+            # Prompts up to 100K tokens; $0.50/$2.50 above 100K (checked 2026-10-27).
+            [[ "$type" == "input" ]] && echo "0.10" || echo "0.50"
+            ;;
         claude-haiku-4-5)
-            [[ "$type" == "input" ]] && echo "0.80" || echo "4.00"
+            [[ "$type" == "input" ]] && echo "1.00" || echo "5.00"
             ;;
         *)
             echo "0"
@@ -932,12 +951,8 @@ render_context() {
     peak_input=$(echo "$_SD" | jq -r '.peak_input // 0')
     [[ "$peak_input" == "0" ]] && return
 
-    # Estimate context limit based on model (200K default)
-    local ctx_limit=200000
-    local pct
-    pct=$(bc <<< "scale=0; $peak_input * 100 / $ctx_limit")
-
-    echo "${DIM}Context:${RESET} ~${pct}% peak (est.) · Model limit: $(format_number $ctx_limit)"
+    # A session can switch models; peak input alone does not identify its context limit.
+    echo "${DIM}Context:${RESET} $(format_number "$peak_input") peak input tokens · Check /context for the active limit"
 }
 
 # ═══════════════════════════════════════════════════════════════════════════

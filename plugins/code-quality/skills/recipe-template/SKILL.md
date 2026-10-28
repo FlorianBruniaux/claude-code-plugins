@@ -6,16 +6,16 @@ effort: low
 disable-model-invocation: true
 ---
 
-# Recipe Command Template
+# Recipe command template
 
 > This is a template. Replace all `[placeholder]` content with your specifics.
 
-## When to Use
+## When to use
 
 - [Describe the exact situation where this command applies]
 - [Describe when NOT to use it, with a common misuse case]
 
-## Context Validation Checkpoints
+## Context validation checkpoints
 
 Before executing any step, verify all of these are true. If any checkpoint fails, stop and explain why to the user.
 
@@ -24,7 +24,7 @@ Before executing any step, verify all of these are true. If any checkpoint fails
 * [ ] [Precondition 3: e.g., "Required config file exists at path X"]
 * [ ] [Precondition 4: e.g., "Necessary permissions or credentials are available"]
 
-## Recipe Steps
+## Recipe steps
 
 ### Step 1: [Action name]
 
@@ -50,7 +50,7 @@ Validation: [How to verify]
 
 ---
 
-### Step 4: Confirm Completion
+### Step 4: Confirm completion
 
 Summarize what was done:
 - [Item 1 completed]
@@ -58,7 +58,7 @@ Summarize what was done:
 - Files modified: [list]
 - Next action for the user (if any): [instruction]
 
-## Error Handling
+## Error handling
 
 | Situation | Response |
 |-----------|----------|
@@ -75,4 +75,4 @@ If no argument was provided: [default behavior]
 
 > The "Context Validation Checkpoints" section is the key pattern from this template.
 > It forces Claude to verify preconditions explicitly rather than discovering failures mid-execution.
-> Inspired by recurring patterns in [Packmind commands](https://github.com/packmind/packmind) (Apache 2.0).
+> Inspired by recurring patterns in [Packmind commands](https://github.com/PackmindHub/packmind) (Apache 2.0).

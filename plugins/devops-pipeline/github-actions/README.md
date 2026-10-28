@@ -4,7 +4,7 @@ description: "Ready-to-use CI/CD workflows integrating Claude Code into GitHub A
 tags: [ci-cd, devops, template, workflows]
 ---
 
-# GitHub Actions Workflows for Claude Code
+# GitHub Actions workflows for Claude Code
 
 Ready-to-use GitHub Actions workflows that integrate Claude Code into your CI/CD pipeline.
 
@@ -17,20 +17,20 @@ Ready-to-use GitHub Actions workflows that integrate Claude Code into your CI/CD
 3. **Copy Workflows**: Place these `.yml` files in `.github/workflows/` directory
 4. **Test**: Open a test PR or issue to see them run
 
-## Available Workflows
+## Available workflows
 
-### 1. Code Review — Prompt-Based (`claude-code-review.yml`) ⭐ Recommended
+### 1. Code review (prompt-based, `claude-code-review.yml`)
 
-**Robust pattern** with externalized prompt, anti-hallucination protocol, and `/claude-review` on-demand trigger.
+Externalized prompt, anti-hallucination protocol, and `/claude-review` on-demand trigger.
 
-The review logic lives in `.github/prompts/code-review.md`, so you can iterate on criteria without touching the workflow YAML. The prompt enforces a verification step before every finding — Claude must confirm an issue with `Read`/`Grep` before reporting it.
+The review logic lives in `.github/prompts/code-review.md`, so you can iterate on criteria without touching the workflow YAML. The prompt asks Claude to verify each finding with `Read`/`Grep`. That instruction is not an executable acceptance control.
 
 **Features:**
 - Triggers on PR open/sync/ready **and** `/claude-review` comment
 - Externalized prompt: edit `code-review.md` to tune criteria for your stack
 - Anti-hallucination protocol: no invented line numbers or unverified claims
 - Structured output: `🔴 MUST FIX` / `🟡 SHOULD FIX` / `🟢 CAN SKIP` table + inline comments
-- Read-only `allowed_tools` (no write access to repo)
+- `claude_args` restricts requested tools to file inspection and review publication; qualify tool availability and permissions in the target repository
 - OAuth token support (no API key needed if Claude GitHub App is installed)
 
 **Setup:**
@@ -49,14 +49,42 @@ Edit `.github/prompts/code-review.md` to add your stack conventions:
 ```markdown
 ## Stack Context
 - TypeScript strict mode, no `any`
-- React Server Components — no `useEffect` for data fetching
+- React Server Components, no `useEffect` for data fetching
 - All DB writes must go through the repository layer
 - New API routes require integration tests
 ```
 
+**Acceptance boundary:**
+This template is advisory. The former gate selected the latest review without binding its producer, run or revision, treated a missing severity heading as zero and could skip after a producer failure. It has been removed. Do not make the advisory job an acceptance verdict.
+
+A replacement needs authenticated evidence for the relevant revision and scope, explicit refusal and unknown states, plus separately verified repository policy. The [control and recovery simulation](../workflows/review-control-demo.py) tests local decision and recovery cases with a fake destination; it is not a live GitHub adapter. See the [multi-provider guide](../../guide/workflows/multi-provider-code-review.md).
+
 ---
 
-### 2. Auto PR Review (`claude-pr-auto-review.yml`)
+### 2. Code review (batched, `claude-code-review-batched.yml`)
+
+For PRs above a file-count threshold (default 75), a single review pass either times out or spreads Claude's attention too thin across unrelated files. This workflow splits the diff into domain-scoped batches (migrations, backend-core, api-routes, frontend, tests-and-tooling), reviews each batch in a parallel matrix job, then synthesizes one final severity table.
+
+**Features:**
+- `check-size` job counts changed files and gates the rest of the workflow on the threshold
+- Matrix `review-batch` job: one parallel run per domain, scoped via `append_system_prompt`
+- `synthesis` job merges all batch comments into a single deduplicated table
+- Same prompt file as the non-batched workflow (`.github/prompts/code-review.md`), no duplicated review criteria to maintain
+
+**Setup:**
+```bash
+cp examples/github-actions/claude-code-review-batched.yml .github/workflows/
+
+# Edit the `matrix.domain` globs to match your actual directory layout.
+# The shipped ones (prisma/migrations, src/server/services, src/components...)
+# are a generic starting point, not a fit for every stack.
+```
+
+Run this alongside `claude-code-review.yml`, not instead of it. Both trigger on the same PR events; the `check-size` job's threshold is what decides which one actually reviews, so keep `BATCH_THRESHOLD` consistent if you gate on file count elsewhere too.
+
+---
+
+### 3. Auto PR review (`claude-pr-auto-review.yml`)
 
 **Enhanced version** with comprehensive review criteria and smart filtering.
 
@@ -93,7 +121,7 @@ append_system_prompt: |
 
 ---
 
-### 2. Security Review (`claude-security-review.yml`)
+### 4. Security review (`claude-security-review.yml`)
 
 Runs a focused security scan and comments findings directly on the PR.
 
@@ -121,7 +149,7 @@ cp examples/github-actions/claude-security-review.yml .github/workflows/
 
 ---
 
-### 3. Issue Triage (`claude-issue-triage.yml`)
+### 5. Issue triage (`claude-issue-triage.yml`)
 
 When a new issue opens, Claude proposes labels/severity and posts a tidy triage comment.
 
@@ -151,7 +179,7 @@ cp examples/github-actions/claude-issue-triage.yml .github/workflows/
 
 ---
 
-## Multi-Model Review Setup
+## Multi-Model review setup
 
 Running Claude alongside other automated reviewers (Gemini, Greptile, CodeRabbit) surfaces issues that any single model misses. The pattern: each service reviews independently, then Claude synthesizes the consensus.
 
@@ -185,9 +213,10 @@ Each model has blind spots. Points raised by 2+ independent reviewers are high-s
 **Step 2: Install Greptile**
 
 1. [greptile.com](https://greptile.com) → connect GitHub account
-2. Select your repo — Greptile indexes the codebase (~5 min)
+2. Select your repo, Greptile indexes the codebase (~5 min)
 3. Configure in dashboard: target branches, focus paths
 4. Reviews post as `greptile[bot]` comments on PRs
+5. Copy `.greptile/config.json`, `.greptile/rules.md`, and `.greptile/files.json` from this directory to your repo root and fill in the placeholders. `rules.md` is where Greptile's cross-file RAG search earns its keep: business invariants that span multiple files (a state machine enforced in one service but not another, a scoping rule that must hold on every query against a sensitive table). Don't restate rules already covered by `.github/prompts/code-review.md` or `.coderabbit.yaml`, split the checklist across the three so each tool owns a distinct set.
 
 **Step 3: Enable synthesis job**
 
@@ -218,25 +247,38 @@ The `multi-reviewer-synthesis` job in `claude-code-review.yml`:
 4. Claude identifies consensus (same finding flagged by 2+ reviewers) vs. unique catches
 5. Posts a structured synthesis comment on the PR
 
+### Scaling to large PRs and repeated pushes
+
+Two problems show up once a repo has real traffic: PRs that touch dozens of files in one go, and PRs that get pushed to five times before merge. Neither is solved by the base workflow above.
+
+**Large PRs**: switch to `claude-code-review-batched.yml` above a file-count threshold (see workflow 2). Splitting the diff by domain keeps each batch focused instead of asking one pass to hold the whole PR in context.
+
+**Repeated pushes**: re-reviewing the full diff on every push burns tokens on code Claude already checked. A delta-review step compares the SHA embedded in the previous review comment (post it as an HTML comment, e.g. `<!-- reviewed-sha: abc123 -->`) against the current push's SHA, and scopes the next review to only the files changed since. This repo does not ship that step as a ready-made template since it depends on how you're already tracking review state (a bot comment, a label, a separate check run); the pattern is: read the last marker, diff `git diff <last-sha>..HEAD --name-only`, pass that file list into `append_system_prompt` the same way the batched workflow scopes by domain.
+
 ### Files in this directory
 
 ```
 examples/github-actions/
-├── README.md                      # This file
-├── claude-code-review.yml         # Main review + optional synthesis job
-├── .coderabbit.yaml               # CodeRabbit config (copy to repo root)
-├── claude-pr-auto-review.yml      # Inline prompt auto-review (alternative)
-├── claude-security-review.yml     # Security-focused scan
-├── claude-issue-triage.yml        # Issue triage workflow
+├── README.md                        # This file
+├── claude-code-review.yml           # Advisory review + optional synthesis job
+├── claude-code-review-batched.yml    # Domain-split matrix review for large PRs
+├── .coderabbit.yaml                 # CodeRabbit config (copy to repo root)
+├── .greptile/
+│   ├── config.json                  # Greptile review config (copy to repo root)
+│   ├── rules.md                     # Cross-file invariants rulebook (copy to repo root)
+│   └── files.json                   # Doc-to-glob RAG index (copy to repo root)
+├── claude-pr-auto-review.yml        # Inline prompt auto-review (alternative)
+├── claude-security-review.yml       # Security-focused scan
+├── claude-issue-triage.yml          # Issue triage workflow
 └── prompts/
-    └── code-review.md             # Externalized review prompt (copy to .github/prompts/)
+    └── code-review.md               # Externalized review prompt (copy to .github/prompts/)
 ```
 
 ---
 
 ## Customization
 
-### Model Selection
+### Model selection
 Set `CLAUDE_MODEL` or `claude-model` parameter in workflows:
 ```yaml
 env:
@@ -251,7 +293,7 @@ Each workflow declares minimal required permissions:
 
 Adjust only if your organization requires stricter policies.
 
-### Scope Filtering
+### Scope filtering
 Use `paths:` filters to limit when workflows run:
 ```yaml
 on:
@@ -279,14 +321,14 @@ on:
 - Validate spacing: two spaces per nesting level, no tabs
 - Use a YAML validator: [yamllint.com](https://www.yamllint.com/)
 
-## Advanced Usage
+## Advanced usage
 
-### Combining Workflows
+### Combining workflows
 Run multiple workflows together for comprehensive automation:
 - PR Review + Security Review on every PR
 - Issue Triage + Auto-labeling for new issues
 
-### Custom Prompts
+### Custom prompts
 Edit the `direct_prompt` section in workflows to customize Claude's focus:
 ```yaml
 direct_prompt: |
@@ -297,7 +339,7 @@ direct_prompt: |
   4. Test coverage
 ```
 
-### Integration with Other Actions
+### Integration with other actions
 Combine with existing workflows:
 ```yaml
 jobs:
@@ -315,7 +357,7 @@ jobs:
         # ...
 ```
 
-## Cost Considerations
+## Cost considerations
 
 These workflows consume Anthropic API credits:
 - **PR Review**: ~$0.10-$0.50 per review (depending on diff size)
@@ -327,13 +369,15 @@ These workflows consume Anthropic API credits:
 - Set conditions: `if: github.event.pull_request.draft == false`
 - Review logs and adjust model selection
 
-## Examples in This Directory
+## Examples in this directory
 
 ```
 examples/github-actions/
 ├── README.md                        # This file
-├── claude-code-review.yml           # Prompt-based review + optional synthesis job
+├── claude-code-review.yml           # Advisory prompt-based review + optional synthesis job
+├── claude-code-review-batched.yml    # Domain-split matrix review for large PRs
 ├── .coderabbit.yaml                 # CodeRabbit config (copy to repo root)
+├── .greptile/                       # Greptile config templates (copy to repo root)
 ├── claude-pr-auto-review.yml        # Inline prompt auto-review (alternative)
 ├── claude-security-review.yml       # Security scanning workflow
 ├── claude-issue-triage.yml          # Issue triage workflow

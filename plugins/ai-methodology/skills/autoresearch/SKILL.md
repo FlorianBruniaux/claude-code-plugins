@@ -1,12 +1,12 @@
 ---
 name: autoresearch
-description: Autonomous improvement loop: scan codebase metrics, scaffold experiment files, run agent-driven iterations until metric improves
+description: "Autonomous improvement loop: scan codebase metrics, scaffold experiment files, run agent-driven iterations until metric improves"
 argument-hint: "[--scaffold <loop-name>] [--run <loop-name>] [--status]"
 effort: high
 disable-model-invocation: true
 ---
 
-# Autoresearch: Autonomous Improvement Loop
+# Autoresearch: Autonomous improvement loop
 
 Scan codebase quality metrics, propose improvement loops, and run autonomous agent iterations. Inspired by [karpathy/autoresearch](https://github.com/karpathy/autoresearch), adapted from ML research to code quality.
 
@@ -214,7 +214,7 @@ Autoresearch Status
 
 ---
 
-## Writing `program.md`: The Most Important File
+## Writing `program.md`: The most important file
 
 `program.md` is the agent's behavior contract. Write it yourself, never auto-generate it. It must encode what the agent can/cannot touch for your specific codebase.
 
@@ -247,7 +247,7 @@ Lower = better. Target: 0.
 
 ---
 
-## The Pattern (Background)
+## The pattern (background)
 
 This command implements the **autoresearch loop** pattern from [karpathy/autoresearch](https://github.com/karpathy/autoresearch):
 

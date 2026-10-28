@@ -1,4 +1,4 @@
-# Talk Pipeline Skills
+# Talk pipeline skills
 
 6-stage skill pipeline that transforms raw material (article, transcript, notes) into a complete conference talk with AI-generated slides.
 
@@ -24,7 +24,7 @@ Or install only the stages you need (each stage is independent).
 | 6 | `stage-6-revision/SKILL.md` | REX + Concept | Revision sheets + Q&A cheat-sheet |
 | — | `orchestrator/SKILL.md` | REX + Concept | Run the full pipeline from one invocation |
 
-## Quick Start
+## Quick start
 
 **Full pipeline (recommended)**:
 ```
@@ -67,4 +67,4 @@ Stage 5 generates `{slug}-kimi-prompt.md`. To generate slides:
 
 ## Documentation
 
-Full workflow guide: [guide/workflows/talk-pipeline.md](../../guide/workflows/talk-pipeline.md)
+Full workflow guide: [guide/workflows/talk-pipeline.md](../../../guide/workflows/talk-pipeline.md)
