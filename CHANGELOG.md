@@ -2,6 +2,12 @@
 
 All notable changes to claude-code-plugins are documented here.
 
+## [Unreleased]
+
+### Changed
+
+- **ai-methodology 1.2.0: `git-ai-archaeology` v2**, synced from the guide (`examples/skills/git-ai-archaeology/`): one-pass `scripts/harness_archaeology.py` (file lifecycles, copies and propagations, AI-trailer usage, unmerged harness work), a reading grid in `references/`, routing scenarios in `evals/`, and a six-step `SKILL.md` with completion criteria.
+
 ## [2.2.0] - 2026-10-28
 
 ### Summary
