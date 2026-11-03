@@ -4,6 +4,11 @@ All notable changes to claude-code-plugins are documented here.
 
 ## [Unreleased]
 
+### Security
+
+- **session-tools 1.1.1 and code-quality 1.1.1: `diagnose` skill pointed at a foreign GitHub account**: the skill fetched the guide and piped `audit-scan.sh` into `bash` from `flobby41/claude-code-ultimate-guide`, an account unrelated to the guide whose repository returns 404. Whoever controls that account could have created the repository and run arbitrary code on every machine that used the skill. All URLs now point to `FlorianBruniaux/claude-code-ultimate-guide`, matching the guide source.
+- **`diagnose` no longer pipes a moving branch into bash**: synced from the guide, step 3 downloads `audit-scan.sh` from a pinned commit to a temporary file and reports failures instead of hiding them; step 2 extracts the guide's Section 10.4 by heading, which the previous 3,000-line cut never reached.
+
 ### Changed
 
 - **ai-methodology 1.2.0: `git-ai-archaeology` v2**, synced from the guide (`examples/skills/git-ai-archaeology/`): one-pass `scripts/harness_archaeology.py` (file lifecycles, copies and propagations, AI-trailer usage, unmerged harness work), a reading grid in `references/`, routing scenarios in `evals/`, and a six-step `SKILL.md` with completion criteria.
