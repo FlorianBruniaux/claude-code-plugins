@@ -55,7 +55,7 @@ SECRET_PATTERNS=(
     "Twilio Key::SK[a-f0-9]{32}"
     "SendGrid Key::SG\.[a-zA-Z0-9_-]{22}\.[a-zA-Z0-9_-]{43}"
     "Slack Token::xox[baprs]-[0-9a-zA-Z-]{10,}"
-    "Discord Token::[MN][A-Za-z0-9]{23,}\.[A-Za-z0-9-_]{6}\.[A-Za-z0-9-_]{27}"
+    "Discord Token::[MN][A-Za-z0-9]{23,}\.[A-Za-z0-9_-]{6}\.[A-Za-z0-9_-]{27}"
 
     # Tokens
     "GitHub Token::(ghp|gho|ghu|ghs|ghr)_[a-zA-Z0-9]{36,}"
@@ -85,15 +85,27 @@ SECRET_PATTERNS=(
 )
 
 DETECTED_SECRETS=()
+SCAN_ERRORS=()
 
 # Check each pattern
 for entry in "${SECRET_PATTERNS[@]}"; do
     secret_type="${entry%%::*}"
     pattern="${entry#*::}"
-    if echo "$TOOL_OUTPUT" | grep -qiE "$pattern" 2>/dev/null; then
+    # -e keeps a pattern that starts with "-" (private key header) from being
+    # parsed as an option. grep exits 1 for "no match" and 2 for an error.
+    if echo "$TOOL_OUTPUT" | grep -qiE -e "$pattern" 2>/dev/null; then
         DETECTED_SECRETS+=("$secret_type")
+    elif [[ ${PIPESTATUS[1]} -gt 1 ]]; then
+        SCAN_ERRORS+=("$secret_type")
     fi
 done
+
+# A pattern that grep could not run is not "no secret": say so
+if [[ ${#SCAN_ERRORS[@]} -gt 0 ]]; then
+    SCAN_ERRORS_LIST=$(printf ", %s" "${SCAN_ERRORS[@]}")
+    echo "output-secrets-scanner: grep failed on pattern(s) ${SCAN_ERRORS_LIST:2}: output not fully scanned" >&2
+    echo "{\"systemMessage\": \"SECRET SCAN INCOMPLETE: grep failed on ${#SCAN_ERRORS[@]} pattern(s), output not fully scanned.\"}"
+fi
 
 # If secrets detected, warn via systemMessage
 if [[ ${#DETECTED_SECRETS[@]} -gt 0 ]]; then
