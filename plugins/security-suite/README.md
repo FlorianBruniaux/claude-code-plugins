@@ -6,9 +6,7 @@ Security auditing pipeline for Claude Code — OWASP vulnerability scanning, mul
 
 **Agents (7)**: security-auditor, security-patcher, anomaly-detector, log-ingestor, risk-classifier, threat-reporter, cyber-defense pipeline (4-stage)
 
-**Commands (5)**: `/security`, `/security-audit`, `/security-check`, `/update-threat-db`, `/sandbox-status`
-
-**Skills (3)**: cyber-defense-team, security-checklist, eval-rules
+**Skills (8)**: security, security-audit, security-check, update-threat-db, sandbox-status, cyber-defense-team, security-checklist, eval-rules
 
 **Hooks (13)**: secrets scanner, prompt injection detector, dangerous actions blocker, sandbox validation, MCP config integrity, repo integrity scanner, security gate, and more
 

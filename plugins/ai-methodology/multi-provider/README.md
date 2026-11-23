@@ -4,7 +4,7 @@ description: "Copilot bridge enabling 25+ AI models via GitHub Copilot Pro+ subs
 tags: [integration, ai-ecosystem, config]
 ---
 
-# Multi-Provider Setup for Claude Code
+# Multi-provider setup for Claude Code
 
 > 🔗 **This content has been moved to a dedicated repository**
 
@@ -19,7 +19,7 @@ A Copilot bridge for Claude Code CLI that enables flat-rate access to 25+ AI mod
 
 ---
 
-## 🎯 What It Does
+## 🎯 What it does
 
 Extends your GitHub Copilot Pro+ subscription to work with Claude Code CLI, giving you:
 - **Flat-rate access** to 25+ models (GPT-4.1, Claude Opus/Sonnet/Haiku, Gemini, etc.)
@@ -49,7 +49,7 @@ Claude Code CLI
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick start
 
 ### Installation
 
@@ -81,8 +81,8 @@ ccc
 cco
 
 # Switch models dynamically
-ccc-opus    # Claude Opus 4.5 (best quality)
-ccc-sonnet  # Claude Sonnet 4.5 (balanced)
+ccc-opus    # Claude Opus 5 (best quality)
+ccc-sonnet  # Claude Sonnet 5 (balanced)
 ccc-haiku   # Claude Haiku 4.5 (fastest)
 ccc-gpt     # GPT-4.1 (alternative)
 ```
@@ -102,9 +102,9 @@ Complete documentation available in the repository:
 
 ---
 
-## 💡 Why Use This?
+## 💡 Why use this?
 
-### Cost Comparison
+### Cost comparison
 
 | Provider | Cost | Limits | Notes |
 |----------|------|--------|-------|
@@ -114,7 +114,7 @@ Complete documentation available in the repository:
 
 > Note: Copilot Pro+ pricing and rate limits are set by GitHub and subject to change. Verify current pricing at [github.com/features/copilot](https://github.com/features/copilot).
 
-### Strategic Use Cases
+### Strategic use cases
 
 | Scenario | Recommended | Reasoning |
 |----------|-------------|-----------|
@@ -136,9 +136,9 @@ Complete documentation available in the repository:
 
 ---
 
-## 🏗️ Architecture Details
+## 🏗️ Architecture details
 
-### Providers Overview
+### Providers overview
 
 **1. Copilot Bridge** (Core Feature)
 - Uses copilot-api proxy on localhost:4141 (loopback only)
@@ -160,7 +160,7 @@ Complete documentation available in the repository:
 - Per-token pricing — check [anthropic.com/pricing](https://www.anthropic.com/pricing) for current rates
 - Manually activated via `ccd` (no automatic failover)
 
-### MCP Profiles System
+### MCP profiles system
 
 **Problem**: GPT-4.1 applies strict JSON Schema validation that rejects some MCP servers with incomplete schemas.
 
@@ -184,7 +184,7 @@ Complete documentation available in the repository:
 
 ---
 
-## 🔒 Security Model
+## 🔒 Security model
 
 | Component | Details |
 |-----------|---------|
@@ -195,7 +195,7 @@ Complete documentation available in the repository:
 
 ---
 
-## ⚠️ Known Limitations & Risks
+## ⚠️ Known limitations & risks
 
 - **ToS compliance**: Using Copilot via an unofficial proxy may violate GitHub's Terms of Service. Evaluate risk before use in corporate or regulated environments.
 - **Rate limits**: GitHub Copilot applies API rate limits. "No per-token billing" does not mean unlimited requests.
@@ -205,7 +205,7 @@ Complete documentation available in the repository:
 
 ---
 
-## 🎓 Legacy Files
+## 🎓 Legacy files
 
 If you need the old multi-provider setup files that were previously in this guide:
 - Check the git history of this repository
@@ -213,7 +213,7 @@ If you need the old multi-provider setup files that were previously in this guid
 
 ---
 
-## 📝 Version Information
+## 📝 Version information
 
 - **cc-copilot-bridge**: v1.2.0 (last synced: 2026-01-22) — [check for newer releases](https://github.com/FlorianBruniaux/cc-copilot-bridge/releases)
 - **Features**: MCP Profiles + System Prompts

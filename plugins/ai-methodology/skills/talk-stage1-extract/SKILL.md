@@ -145,6 +145,6 @@ If no obvious gaps -> "No major gaps identified."
 
 ## Related
 
-- [Stage 2: Research](../stage-2-research/SKILL.md): git archaeology (REX mode)
-- [Stage 3: Concepts](../stage-3-concepts/SKILL.md): reads this summary
-- [Orchestrator](../orchestrator/SKILL.md): runs all stages in sequence
+- [Stage 2: Research](../talk-stage2-research/SKILL.md): git archaeology (REX mode)
+- [Stage 3: Concepts](../talk-stage3-concepts/SKILL.md): reads this summary
+- [Orchestrator](../talk-pipeline/SKILL.md): runs all stages in sequence

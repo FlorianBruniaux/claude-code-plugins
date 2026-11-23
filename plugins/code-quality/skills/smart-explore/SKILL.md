@@ -1,6 +1,6 @@
 ---
 name: smart-explore
-description: "Progressive code exploration using tree-sitter AST — structure first, drill second. Reduces code reading from 10-15k tokens per file to 200-500 tokens."
+description: "Progressive code exploration, structure first and drill second, using grep patterns, a tree-sitter signature script, or an MCP server. Use when understanding an unfamiliar module or finding where to add a feature without reading whole files. Not for reading one known function. Illustrative estimate: 10-15k tokens per file down to 200-500."
 effort: low
 ---
 
@@ -317,7 +317,7 @@ claude mcp add tree-sitter python -m mcp_server_tree_sitter
 - `find_symbols` — search by name across codebase
 - `analyze_dependencies` — cross-file reference analysis
 
-**Configure in Claude Code** (`~/.claude/settings.json`):
+**Or configure it as JSON** in a project `.mcp.json` (or `~/.claude.json`), not in `settings.json`:
 ```json
 {
   "mcpServers": {
@@ -355,7 +355,7 @@ code-review-graph install
 claude mcp add jcodemunch uvx jcodemunch-mcp
 ```
 
-**Note**: Free for personal/OSS projects. $79/developer for commercial use. Check licensing before team adoption.
+**Note**: Free for personal/OSS projects. \$79/developer for commercial use. Check licensing before team adoption.
 
 Once added, Claude can call:
 ```
@@ -484,7 +484,7 @@ brew install tree-sitter  # macOS
 python -m mcp_server_tree_sitter --help
 
 # Restart Claude Code after adding MCP server
-# Check ~/.claude/settings.json has correct config
+# Check the server entry in .mcp.json or ~/.claude.json (claude mcp list)
 ```
 
 **Results are too verbose** (too many signatures):

@@ -153,7 +153,7 @@ For each enriched concept, include:
 
 ## Related
 
-- [Stage 1: Extract](../stage-1-extract/SKILL.md): prerequisite
-- [Stage 2: Research](../stage-2-research/SKILL.md): provides timeline (REX)
-- [Stage 4: Position](../stage-4-position/SKILL.md): reads this catalogue
-- [Orchestrator](../orchestrator/SKILL.md)
+- [Stage 1: Extract](../talk-stage1-extract/SKILL.md): prerequisite
+- [Stage 2: Research](../talk-stage2-research/SKILL.md): provides timeline (REX)
+- [Stage 4: Position](../talk-stage4-position/SKILL.md): reads this catalogue
+- [Orchestrator](../talk-pipeline/SKILL.md)

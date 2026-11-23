@@ -6,9 +6,7 @@ Code quality pipeline for Claude Code: SOLID refactoring, TDD workflow, GoF desi
 
 **Agents (6)**: code-reviewer, refactoring-specialist, architecture-reviewer, test-writer, integration-reviewer, output-evaluator
 
-**Commands (8)**: `/refactor`, `/optimize`, `/generate-tests`, `/explain`, `/review-plan`, `/qa`, `/investigate`, `/sonarqube`
-
-**Skills (10)**: validate-changes, audit-codebase, check-cache-bugs, recipe-template, diagnose, design-patterns (GoF reference + checklists), eval-skills, tdd-workflow, smart-explore, ast-grep-patterns
+**Skills (18)**: refactor, optimize, generate-tests, explain, review-plan, qa, investigate, sonarqube, validate-changes, audit-codebase, check-cache-bugs, recipe-template, diagnose, design-patterns (GoF reference + checklists), eval-skills, tdd-workflow, smart-explore, ast-grep-patterns
 
 **Hooks (3)**: output-validator, governance-enforcement-hook, validate-changes
 

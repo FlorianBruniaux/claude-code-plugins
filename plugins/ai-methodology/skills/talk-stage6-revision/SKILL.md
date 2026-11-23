@@ -224,5 +224,5 @@ Produces revision sheets usable during and after the talk. Quick navigation by a
 
 ## Related
 
-- [Stage 5: Script](../stage-5-script/SKILL.md): prerequisite
-- [Orchestrator](../orchestrator/SKILL.md)
+- [Stage 5: Script](../talk-stage5-script/SKILL.md): prerequisite
+- [Orchestrator](../talk-pipeline/SKILL.md)

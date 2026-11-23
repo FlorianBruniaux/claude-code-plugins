@@ -1,8 +1,9 @@
 ---
 name: pdf-generator
-description: Generate professional PDFs using Quarto/Typst stack with modern design template
+description: "Generate professional PDFs from Markdown with the Quarto and Typst stack: project setup, templates, rendering, and troubleshooting. Use when the user wants a styled PDF or EPUB from .qmd or Markdown sources, or when a Quarto/Typst render fails."
 effort: low
-version: 1.0.0
+metadata:
+  version: 1.0.0
 ---
 
 # PDF generator skill
@@ -23,33 +24,33 @@ This skill assists with:
 | Tool | Version | Role |
 |------|---------|------|
 | **Quarto** | ≥1.4.0 | Document rendering engine |
-| **Typst** | 0.13.0 | Modern typography (integrated) |
+| **Typst** | bundled with Quarto (`quarto typst --version`) | Modern typography (integrated) |
 | **Pandoc** | 3.x | Markdown conversion (integrated) |
 
-### Pipeline de génération
+### Generation pipeline
 
 ```
-  SOURCE              OUTIL           TEMPLATE              OUTPUT
-  ──────              ─────           ────────              ──────
+  SOURCE              TOOL            TEMPLATE              OUTPUT
+  ──────              ────            ────────              ──────
 
-  .qmd  ──────────► Quarto ────► --to whitepaper-typst ──► Typst 0.13 ──► .pdf ✅
+  .qmd  ──────────► Quarto ────► --to whitepaper-typst ──► Typst ──► .pdf ✅
   (Markdown           │           (_extensions/               (~270K–1.7M,
-  + YAML)             │            typst-template.typ)         stylé)
+  + YAML)             │            typst-template.typ)         styled)
                       │
                       └──────► --to epub ──► Pandoc ──────────────────► .epub
                                              + epub-styles.css
 
-  ⚠️  --to pdf (sans template) → PDF petit, non stylé → Toujours préférer --to whitepaper-typst
+  ⚠️  --to pdf (no template) → small, unstyled PDF → always prefer --to whitepaper-typst
 ```
 
-### Formats disponibles
+### Available formats
 
 ```
   ┌──────────────────────┬────────────────────────┬──────────────────┐
-  │ Format               │ Commande               │ Sortie           │
+  │ Format               │ Command                │ Output           │
   ├──────────────────────┼────────────────────────┼──────────────────┤
-  │ PDF stylé ✅         │ --to whitepaper-typst  │ ~270K–1.7M       │
-  │ PDF standard ❌      │ --to pdf               │ ~80-190K, brut   │
+  │ Styled PDF ✅        │ --to whitepaper-typst  │ ~270K–1.7M       │
+  │ Standard PDF ❌      │ --to pdf               │ ~80-190K, raw    │
   │ EPUB                 │ --to epub              │ epub-output/     │
   └──────────────────────┴────────────────────────┴──────────────────┘
 ```
@@ -62,9 +63,9 @@ This skill assists with:
 # macOS
 brew install quarto
 
-# Linux
-wget https://github.com/quarto-dev/quarto-cli/releases/download/v1.4.555/quarto-1.4.555-linux-amd64.deb
-sudo dpkg -i quarto-1.4.555-linux-amd64.deb
+# Linux: download the .deb for your architecture from
+# https://github.com/quarto-dev/quarto-cli/releases, then:
+sudo dpkg -i quarto-<version>-linux-amd64.deb
 
 # Windows
 winget install Posit.Quarto
@@ -394,4 +395,4 @@ format:
 - [Quarto Documentation](https://quarto.org/docs/guide/)
 - [Typst Documentation](https://typst.app/docs/)
 - [Quarto + Typst Guide](https://quarto.org/docs/output-formats/typst.html)
-- [Workflow Guide](../../guide/workflows/pdf-generation.md)
+- [Workflow Guide](../../../guide/workflows/pdf-generation.md)

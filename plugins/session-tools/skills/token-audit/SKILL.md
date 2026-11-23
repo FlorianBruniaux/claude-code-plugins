@@ -1,6 +1,6 @@
 ---
 name: token-audit
-description: "Audit Claude Code configuration to measure fixed-context token overhead and produce a prioritized action plan. Use when hitting rate limits, experiencing early context compression, or after adding significant config files."
+description: "Audit Claude Code configuration to measure fixed-context token overhead and produce a prioritized action plan. Use when hitting rate limits, experiencing early context compression, or after adding significant config files. Not for per-skill cost: use /skill-doctor."
 effort: medium
 allowed-tools: Read Grep Glob Bash
 ---
@@ -23,13 +23,14 @@ allowed-tools: Read Grep Glob Bash
 |-----------|-------------|---------------|
 | `~/.claude/CLAUDE.md` + @imports | Always | 5-15K tokens |
 | Project `CLAUDE.md` | Always | 2-8K tokens |
-| `.claude/rules/*.md` | Always (all files) | 5-40K tokens |
-| `MEMORY.md` | Always | 1-3K tokens |
+| `.claude/rules/*.md` without `paths` | Always | 5-40K tokens |
+| `MEMORY.md` | Always (first 200 lines or 25KB) | 1-3K tokens |
 | Claude Code system prompt | Always | ~7,500 tokens |
-| Hook stdout | Per tool call | variable |
-| Commands, agents, skills | On invocation only | 0 by default |
+| Hook output (`additionalContext`, plain stdout of `UserPromptSubmit` and `SessionStart` hooks) | Per matching event | variable |
+| Skill and agent descriptions | Always (listing only) | small per item, adds up |
+| Skill and agent bodies | On invocation only | 0 by default |
 
-Key insight: `.claude/rules/` loads every `.md` file at session start, regardless of relevance. Commands and agents are lazy-loaded — they cost zero until invoked. Rules files are the most common source of unexpected overhead.
+Key insight: `.claude/rules/` loads every `.md` file without a `paths` field at session start, regardless of relevance. Skill and agent bodies are lazy-loaded (only their descriptions sit in context) and cost nothing more until invoked. Rules files are the most common source of unexpected overhead.
 
 ---
 
@@ -47,7 +48,7 @@ echo "=== RULES FILES (sorted by size) ===" && find .claude/rules -name "*.md" 2
 
 echo ""
 echo "=== GLOBAL ~/.claude ===" && ls -la ~/.claude/*.md 2>/dev/null \
-  | awk '{print $5, $9}' | sort -rn
+  | awk '{print \$5, \$9}' | sort -rn
 ```
 
 Then calculate the full budget:
@@ -58,7 +59,7 @@ PROJECT=$(wc -c < CLAUDE.md 2>/dev/null || echo 0)
 RULES=$(find .claude/rules -name "*.md" 2>/dev/null | xargs cat 2>/dev/null | wc -c || echo 0)
 MEMORY=$(find ~/.claude/projects -name "MEMORY.md" 2>/dev/null \
   | xargs grep -l "$(basename $(pwd))" 2>/dev/null | head -1 \
-  | xargs wc -c 2>/dev/null | awk '{print $1}' || echo 0)
+  | xargs wc -c 2>/dev/null | awk '{print \$1}' || echo 0)
 TOTAL=$(( GLOBAL + PROJECT + RULES + MEMORY + 30000 ))
 
 echo "Global ~/.claude   : ~$(( GLOBAL / 4 )) tokens ($(( GLOBAL / 1000 ))K chars)"
@@ -81,7 +82,7 @@ For each file in `.claude/rules/`, classify it:
 |-------|------------|--------|
 | **ALWAYS** | Applies to most tasks (conventions, output format, safety) | Keep auto-loaded |
 | **SOMETIMES** | Relevant in 20-40% of sessions | Keep if small (<3K chars); lazy-load if large |
-| **RARELY** | Relevant in <10% of sessions (Figma, Windows, design system) | Remove from auto-load |
+| **RARELY** | Relevant in <10% of sessions (Figma, Windows, design system) | Add a `paths` field so it loads only for matching files, or move it out of `.claude/rules/` |
 | **NEVER** | Outdated or covered elsewhere | Delete or archive |
 
 Run this classification prompt:
@@ -100,30 +101,31 @@ RARELY and NEVER files were excluded. Convert to tokens (÷ 4).
 
 ## Step 3 — audit hook overhead
 
-Hooks on `PreToolUse` and `PostToolUse` fire on every tool call. Each invocation injects its stdout into context. A hook outputting 500 chars on 150 tool calls per session = 75K chars ≈ 19K extra tokens.
+Hooks on `PreToolUse` and `PostToolUse` fire on every matching tool call. Plain stdout from those events does not reach Claude, but a JSON `additionalContext` string does (capped at 10,000 characters per hook), and `UserPromptSubmit` and `SessionStart` hooks add plain stdout as context. A hook injecting 500 chars on 150 tool calls per session = 75K chars ≈ 19K extra tokens.
 
 Check what you have:
 
 ```bash
-# List hooks by event type
+# List hooks by event type (settings nest hooks as event -> matcher groups -> hooks)
 python3 - << 'EOF'
 import json, os
 for path in [os.path.expanduser("~/.claude/settings.json"), ".claude/settings.json"]:
     if not os.path.exists(path): continue
     print(f"\n--- {path} ---")
     data = json.load(open(path))
-    for event, hooks in data.get("hooks", {}).items():
-        for h in hooks:
-            cmd = h.get("command", "?")
-            matcher = h.get("matcher", "*")
-            print(f"  [{event}] matcher={matcher} → {cmd[:80]}")
+    for event, groups in data.get("hooks", {}).items():
+        for g in groups:
+            matcher = g.get("matcher", "*")
+            for h in g.get("hooks", []):
+                cmd = h.get("command") or h.get("url") or h.get("type", "?")
+                print(f"  [{event}] matcher={matcher} -> {str(cmd)[:80]}")
 EOF
 ```
 
-For each `PreToolUse` or `PostToolUse` hook, estimate its stdout size by running it manually. Multiply by your average tool call count per session (visible in `/cost` after a session).
+For each hook that returns `additionalContext` or runs on `UserPromptSubmit` or `SessionStart`, estimate its output size by running it manually. Multiply by your average tool call count per session (visible in `/cost` after a session).
 
 **Red flags**:
-- Hooks that `cat` files unconditionally
+- Hooks that return file contents as `additionalContext` unconditionally
 - `git status` or `git log` on every call
 - Multi-line echo output for debugging that was never removed
 - JSON blobs injected as context
@@ -136,7 +138,7 @@ Produce a prioritized table. Rule of thumb: only include actions achievable with
 
 | Action | Estimated token savings | Effort | Risk |
 |--------|------------------------|--------|------|
-| Remove RARELY files from auto-load | varies | 30 min | Low |
+| Scope RARELY files with `paths` or remove them from auto-load | varies | 30 min | Low |
 | Split large rules into core + detail | varies | 1-2h | Low |
 | Trim hook stdout to essential fields | varies | 1h | Low |
 | Compress verbose rules (see §8 context-engineering.md) | 20-30% of rules | 1-2h | Low |

@@ -20,7 +20,7 @@ Produces the complete talk in 3 deliverables: the 5-act narrative with speaker n
 ## What this skill does
 
 1. **Verifies inputs**: all upstream files + angle/title confirmation
-2. **Loads the Kimi template**: from `templates/kimi-prompt-template.md`
+2. **Loads the Kimi template**: from `${CLAUDE_SKILL_DIR}/templates/kimi-prompt-template.md`
 3. **Builds the pitch**: 5-act structure with speaker notes and timing
 4. **Builds the slide spec**: slide by slide with visual, text, notes
 5. **Generates the Kimi prompt**: fills the template with talk content
@@ -153,7 +153,7 @@ Slide-by-slide spec, ready to hand to a designer or pass to Kimi.
 
 ## kimi-prompt.md
 
-Fill the template at `templates/kimi-prompt-template.md` with the talk's content.
+Fill the template at `${CLAUDE_SKILL_DIR}/templates/kimi-prompt-template.md` with the talk's content.
 
 Required sections to complete:
 - Full title and subtitle
@@ -216,6 +216,6 @@ For iterative refinement: add follow-up messages targeting specific slides. "Sli
 
 ## Related
 
-- [Stage 4: Position](../stage-4-position/SKILL.md): prerequisite (CHECKPOINT required)
-- [Stage 6: Revision](../stage-6-revision/SKILL.md): reads pitch + slides
-- [Orchestrator](../orchestrator/SKILL.md)
+- [Stage 4: Position](../talk-stage4-position/SKILL.md): prerequisite (CHECKPOINT required)
+- [Stage 6: Revision](../talk-stage6-revision/SKILL.md): reads pitch + slides
+- [Orchestrator](../talk-pipeline/SKILL.md)

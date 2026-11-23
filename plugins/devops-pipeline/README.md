@@ -4,13 +4,11 @@ CI/CD automation for Claude Code: git worktrees, deploy pipeline, canary monitor
 
 ## What's included
 
-**Commands (9)**: `/ci:all`, `/ci:pipeline`, `/ci:status`, `/ci:tests`, `/canary`, `/land-and-deploy`, `/ship`, `/commit`, `/git-worktree` (+ clean/remove/status)
-
 **Hooks (8)**: auto-format (bash + PowerShell), test-on-change, typecheck-on-save, pre-commit-evaluator, auto-checkpoint, notification, setup-init
 
 **Workflows**: database-branch-setup
 
-**Skills (11)**: ci-all, ci-pipeline, ci-status, ci-tests, canary, land-and-deploy, sandbox-status, git-worktree, git-worktree-clean, git-worktree-remove, git-worktree-status
+**Skills (13)**: ci-all, ci-pipeline, ci-status, ci-tests, canary, land-and-deploy, ship, commit, sandbox-status, git-worktree, git-worktree-clean, git-worktree-remove, git-worktree-status
 
 **GitHub Actions templates**, **integrations**, and **utility scripts**
 
@@ -23,7 +21,7 @@ claude plugin install github:FlorianBruniaux/claude-code-plugins/plugins/devops-
 ## Quick start
 
 ```
-/ci:all          # Full local CI (tests + typecheck + push + pipeline URL)
+/ci-all          # Full local CI (tests + typecheck + push + pipeline URL)
 /ship            # Pre-deployment verification checklist
 /land-and-deploy # Merge PR → wait CI → verify deploy → canary
 ```

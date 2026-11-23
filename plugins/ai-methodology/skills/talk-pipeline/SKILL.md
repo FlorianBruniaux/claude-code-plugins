@@ -1,8 +1,10 @@
 ---
 name: talk-pipeline
 description: "Orchestrates the complete talk preparation pipeline from raw material to revision sheets, running 6 stages in sequence with human-in-the-loop checkpoints for REX or Concept mode talks. Use when starting a new talk pipeline, resuming a pipeline from a specific stage, or running the full end-to-end preparation workflow."
-allowed-tools: Write Read AskUserQuestion Task
+argument-hint: "[--rex | --concept] [--stage=NAME] [--slug=NAME] [--event=NAME] [--date=YYYY-MM-DD] [--duration=MIN]"
+allowed-tools: Write Read AskUserQuestion Skill Agent
 effort: high
+disable-model-invocation: true
 ---
 
 # Talk pipeline orchestrator
@@ -44,7 +46,7 @@ Ask with AskUserQuestion if not provided:
 1. **Collect context** using AskUserQuestion for required metadata
 2. **Route by mode** (`--rex` vs `--concept`, skip Stage 2 if concept)
 3. **Run Stage 1** (`/talk-stage1-extract`, always first)
-4. **Run Stages 2-4 in parallel** (after Stage 1 confirmed)
+4. **Run Stages 2-4 in parallel** (after Stage 1 confirmed; spawn one subagent per stage with the `Agent` tool, or run them one after another with the `Skill` tool)
    - REX: extract -> research + concepts + position (in parallel)
    - Concept: extract -> concepts + position (in parallel, skip research)
 5. **CHECKPOINT**: wait for angle + title choice (Stage 4 output)
@@ -161,10 +163,10 @@ Next step: open kimi-prompt.md, verify no {PLACEHOLDER} remains, paste into kimi
 
 ## Related
 
-- [Stage 1: Extract](../stage-1-extract/SKILL.md)
-- [Stage 2: Research](../stage-2-research/SKILL.md)
-- [Stage 3: Concepts](../stage-3-concepts/SKILL.md)
-- [Stage 4: Position](../stage-4-position/SKILL.md)
-- [Stage 5: Script](../stage-5-script/SKILL.md)
-- [Stage 6: Revision](../stage-6-revision/SKILL.md)
-- [Full workflow guide](../../../../guide/workflows/talk-pipeline.md)
+- [Stage 1: Extract](../talk-stage1-extract/SKILL.md)
+- [Stage 2: Research](../talk-stage2-research/SKILL.md)
+- [Stage 3: Concepts](../talk-stage3-concepts/SKILL.md)
+- [Stage 4: Position](../talk-stage4-position/SKILL.md)
+- [Stage 5: Script](../talk-stage5-script/SKILL.md)
+- [Stage 6: Revision](../talk-stage6-revision/SKILL.md)
+- [Full workflow guide](../../../guide/workflows/talk-pipeline.md)

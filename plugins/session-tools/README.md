@@ -4,9 +4,7 @@ Session productivity for Claude Code: cost/token monitoring (ccboard), context c
 
 ## What's included
 
-**Commands (8)**: `/catchup`, `/session-save`, `/check-cache-bugs`, `/diagnose`, `/routines-discover`, `/autoresearch`, `/learn-alternatives`, `/learn-quiz`, `/learn-teach`
-
-**Skills (10)**: explain, handoff-create, handoff-resume, handoff-update, session-save, catchup, ccboard (TUI/Web dashboard), voice-refine, token-audit, mcp-integration-reference
+**Skills (17)**: explain, handoff-create, handoff-resume, handoff-update, session-save, catchup, check-cache-bugs, diagnose, routines-discover, autoresearch, learn-alternatives, learn-quiz, learn-teach, ccboard (TUI/Web dashboard), voice-refine, token-audit, mcp-integration-reference
 
 **Hooks (11)**: session-summary dashboard, session-logger, rtk-auto-wrapper, smart-suggest, identity-reinjection, learning-capture, subagent-stop, tts-selective, and more
 

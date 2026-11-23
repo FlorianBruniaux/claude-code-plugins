@@ -1,21 +1,21 @@
 ---
 name: plan-pipeline-eng-review
-description: "Engineering architecture gate: lock architecture, diagrams, edge cases, and test matrix before writing implementation code"
+description: "Engineering architecture gate: lock architecture, diagrams, edge cases, and the test matrix before implementation code. Use after product direction is locked, for features with async parts, external dependencies, or multi-step flows."
 effort: medium
 disable-model-invocation: true
 ---
 
-# /plan-pipeline:eng-review: Engineering architecture gate
+# /plan-pipeline-eng-review: Engineering architecture gate
 
-Post-direction, pre-implementation command. Takes validated product direction and returns a buildable technical spec with diagrams. Forces the system to think through architecture before a single line of implementation code is written.
+Post-direction, pre-implementation skill. Takes validated product direction and returns a buildable technical spec with diagrams. Forces the system to think through architecture before a single line of implementation code is written.
 
-**Use after `/plan-pipeline:ceo-review` has locked direction. Still in plan mode.**
+**Use after `/plan-pipeline-ceo-review` has locked direction. Still in plan mode.**
 
 ---
 
 ## The problem this solves
 
-Once product direction is locked, the next failure mode is vague architecture. "The system will handle it" is not a plan. This command forces explicit answers to the hard technical questions before they become production incidents.
+Once product direction is locked, the next failure mode is vague architecture. "The system will handle it" is not a plan. This skill forces explicit answers to the hard technical questions before they become production incidents.
 
 The key unlock: **forcing diagram generation**. Diagrams surface hidden assumptions that prose keeps vague. A sequence diagram makes you specify who calls what. A state machine makes you enumerate every failure mode explicitly.
 
@@ -23,7 +23,7 @@ The key unlock: **forcing diagram generation**. Diagrams surface hidden assumpti
 
 ## When to use
 
-- After product direction is validated (post `/plan-pipeline:ceo-review` or equivalent)
+- After product direction is validated (post `/plan-pipeline-ceo-review` or equivalent)
 - Before any implementation work starts on a non-trivial feature
 - When the feature has async components, external dependencies, or multi-step flows
 - Any time "the architecture is clear" needs to be proven, not assumed
@@ -47,7 +47,7 @@ The key unlock: **forcing diagram generation**. Diagrams surface hidden assumpti
 ## Prompt template
 
 ```markdown
-# /plan-pipeline:eng-review
+# /plan-pipeline-eng-review
 
 You are in engineering manager / tech lead mode. Direction is locked.
 Your job is to make it buildable: turn the product direction into a
@@ -143,7 +143,7 @@ blockers.
 
 ## Example
 
-**Feature**: Smart listing creation from photo (post-`/plan-pipeline:ceo-review`)
+**Feature**: Smart listing creation from photo (post-`/plan-pipeline-ceo-review`)
 
 **Output excerpt**:
 ```mermaid
@@ -181,9 +181,9 @@ Failure modes:
 ## Pipeline position
 
 ```
-/plan-pipeline:ceo-review    -> product direction locked
-/plan-pipeline:eng-review    -> architecture locked        <- you are here
-/plan-pipeline:start         -> produce implementation plan
-/plan-pipeline:validate      -> validate before execution
-/plan-pipeline:execute       -> execute to merged PR
+/plan-pipeline-ceo-review    -> product direction locked
+/plan-pipeline-eng-review    -> architecture locked        <- you are here
+/plan-pipeline-start         -> produce implementation plan
+/plan-pipeline-validate      -> validate before execution
+/plan-pipeline-execute       -> execute to merged PR
 ```

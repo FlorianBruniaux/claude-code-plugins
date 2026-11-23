@@ -122,6 +122,17 @@ grep -rn "ssh\|id_rsa\|id_ed25519\|\.env\|credentials\|secret\|password\|token\|
 - [ ] Credential access (`ssh`, `.env`, `password`) → CRITICAL
 - [ ] Base64 encoding → MEDIUM (review context)
 
+**Archives and Windows executables inside agent directories:**
+
+```bash
+# FakeGit lures hid SmartLoader ZIPs under .claude/hooks/config/ (Nov 2026)
+find .claude .codex .agents .cursor .gemini ~/.claude/skills -type f \
+  \( -iname '*.zip' -o -iname '*.7z' -o -iname '*.rar' -o -iname '*.exe' \
+     -o -iname '*.dll' -o -iname '*.bat' -o -iname '*.cmd' -o -iname '*.msi' \) 2>/dev/null
+```
+
+- [ ] Archive or Windows executable inside an agent directory? → HIGH (never extract or run it; compare its SHA-256 with the FakeGit hashes in `iocs.malware_hashes`)
+
 ### Phase 5: Memory poisoning check
 
 ```bash
@@ -144,7 +155,7 @@ cat ~/.claude/settings.json 2>/dev/null
 
 - [ ] `permissions.deny` exists and covers `.env*`, `*.pem`, `*.key`, secrets? → MEDIUM if missing
 - [ ] No wildcard `permissions.allow` for Bash or Write? → HIGH if present
-- [ ] No `dangerouslySkipPermissions` or similar flags? → CRITICAL if present
+- [ ] No `permissions.defaultMode: "bypassPermissions"` and no wrapper scripts or aliases that pass `--dangerously-skip-permissions`? → CRITICAL if present
 
 ### Phase 7: Exposed secrets in config
 

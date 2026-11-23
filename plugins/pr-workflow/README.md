@@ -4,11 +4,9 @@ PR and issue lifecycle for Claude Code: structured planning (CEO + Eng gates), P
 
 ## What's included
 
-**Commands (11)**: `/pr`, `/review-pr`, `/plan-start`, `/plan-ceo-review`, `/plan-eng-review`, `/plan-execute`, `/plan-validate`, `/review-plan`, handoff commands (create/resume/update)
-
 **Agents (3)**: planner, planning-coordinator, plan-challenger
 
-**Skills (5)**: plan-pipeline, review-plan, review-pr, pr-triage (4-phase PR review), issue-triage (3-phase backlog management)
+**Skills (15)**: pr, review-pr, review-plan, plan-pipeline, plan-pipeline-start, plan-pipeline-ceo-review, plan-pipeline-eng-review, plan-pipeline-execute, plan-pipeline-validate, handoff-create, handoff-resume, handoff-update, pr-triage (4-phase PR review), issue-triage (3-phase backlog management)
 
 **Hooks (2)**: file-guard, velocity-governor
 
@@ -21,7 +19,7 @@ claude plugin install github:FlorianBruniaux/claude-code-plugins/plugins/pr-work
 ## Quick start
 
 ```
-/plan-start          # 5-phase planning: PRD → design → decisions → research → metrics
+/plan-pipeline-start # 5-phase planning: PRD → design → decisions → research → metrics
 /pr                  # Analyze changes + create well-structured PR
 /pr-triage all       # 4-phase PR backlog review with validated comments
 ```

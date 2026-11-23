@@ -1,13 +1,13 @@
 ---
 name: plan-pipeline-ceo-review
-description: "Strategic product gate: challenge the brief, find the 10-star product hiding inside the request, before writing any code"
+description: "Strategic product gate: challenge the brief and find the 10-star product hiding in the request before any code is written. Use before implementing a significant feature when the product direction is not locked."
 effort: medium
 disable-model-invocation: true
 ---
 
-# /plan-pipeline:ceo-review: Strategic product gate
+# /plan-pipeline-ceo-review: Strategic product gate
 
-Pre-implementation command. Inserts an explicit gate between "I have a request" and "I start coding". Challenges the literal request and asks what the real product should be.
+Pre-implementation skill. Inserts an explicit gate between "I have a request" and "I start coding". Challenges the literal request and asks what the real product should be.
 
 **Use in plan mode, before any implementation.**
 
@@ -15,7 +15,7 @@ Pre-implementation command. Inserts an explicit gate between "I have a request" 
 
 ## The problem this solves
 
-Claude Code is optimized to build what you ask. If you say "add X", it builds X. It will not ask whether X is actually the right product. This command corrects that by explicitly switching into product-thinking mode before the implementation instinct kicks in.
+Claude Code is optimized to build what you ask. If you say "add X", it builds X. It will not ask whether X is actually the right product. This skill corrects that by explicitly switching into product-thinking mode before the implementation instinct kicks in.
 
 ---
 
@@ -29,7 +29,7 @@ Claude Code is optimized to build what you ask. If you say "add X", it builds X.
 
 ## Three modes
 
-The command asks the user to choose one before proceeding:
+The skill asks the user to choose one before proceeding:
 
 | Mode | Posture | Use when |
 |------|---------|----------|
@@ -44,7 +44,7 @@ The assistant commits to the selected mode and does not drift mid-review.
 ## Prompt template
 
 ```markdown
-# /plan-pipeline:ceo-review
+# /plan-pipeline-ceo-review
 
 You are in CEO / founder review mode. Your job is NOT to implement anything.
 Your job is to review the plan or feature request with product-level thinking
@@ -123,9 +123,9 @@ Do NOT make any code changes. This is a review, not an implementation.
 ## Pipeline position
 
 ```
-/plan-pipeline:ceo-review    -> lock product direction   <- you are here
-/plan-pipeline:eng-review    -> lock technical architecture
-/plan-pipeline:start         -> produce implementation plan
-/plan-pipeline:validate      -> validate before execution
-/plan-pipeline:execute       -> execute to merged PR
+/plan-pipeline-ceo-review    -> lock product direction   <- you are here
+/plan-pipeline-eng-review    -> lock technical architecture
+/plan-pipeline-start         -> produce implementation plan
+/plan-pipeline-validate      -> validate before execution
+/plan-pipeline-execute       -> execute to merged PR
 ```

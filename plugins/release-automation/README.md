@@ -4,9 +4,7 @@ Release workflow for Claude Code: generate changelogs, release notes in 3 format
 
 ## What's included
 
-**Commands (2)**: `/release-notes`, `/commit`
-
-**Skills (3)**: release-notes, release-notes-generator (CHANGELOG + PR + Slack), guide-recap (LinkedIn + Twitter + Newsletter + Slack)
+**Skills (4)**: commit, release-notes, release-notes-generator (CHANGELOG + PR + Slack), guide-recap (LinkedIn + Twitter + Newsletter + Slack)
 
 **Hooks (1)**: validate-changes (LLM-as-a-Judge pre-commit gate)
 

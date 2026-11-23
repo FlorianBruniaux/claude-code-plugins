@@ -188,6 +188,6 @@ git -C {repo_path} log --pretty=format:"%Y-%m" | sort | uniq -c | sort -rn | hea
 
 ## Related
 
-- [Stage 1: Extract](../stage-1-extract/SKILL.md): prerequisite
-- [Stage 3: Concepts](../stage-3-concepts/SKILL.md): reads this timeline
-- [Orchestrator](../orchestrator/SKILL.md)
+- [Stage 1: Extract](../talk-stage1-extract/SKILL.md): prerequisite
+- [Stage 3: Concepts](../talk-stage3-concepts/SKILL.md): reads this timeline
+- [Orchestrator](../talk-pipeline/SKILL.md)

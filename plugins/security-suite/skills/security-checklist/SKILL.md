@@ -1,6 +1,6 @@
 ---
 name: security-checklist
-description: Comprehensive security checklist for web applications
+description: "Reference security checklist and code patterns for web applications (authentication, authorization, input validation, headers, secrets, logging). Use when writing or reviewing web app code that handles auth, user input, sessions, or deployment hardening. Not for scanning a codebase: use the security skill."
 effort: medium
 ---
 
@@ -48,7 +48,7 @@ effort: medium
 db.query(`SELECT * FROM users WHERE id = ${userId}`);
 
 // SECURE
-db.query('SELECT * FROM users WHERE id = $1', [userId]);
+db.query('SELECT * FROM users WHERE id = \$1', [userId]);
 ```
 
 ### XSS prevention
@@ -94,7 +94,6 @@ const secret = await secretsManager.getSecret('api-key');
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   res.setHeader('Content-Security-Policy', "default-src 'self'");
   next();

@@ -4,11 +4,11 @@ AI-assisted development methodology for Claude Code: scaffolding skills, 6-stage
 
 ## What's included
 
-**Commands (5)**: `/methodology-advisor`, `/scaffold`, `/audit-codebase`, `/audit-agents-skills`, `/spec-completeness-audit`
+**Commands (1)**: `/spec-completeness-audit`
 
 **Agents (2)**: adr-writer, report-template
 
-**Skills (12)**: eval-agents, eval-hooks, methodology-advisor, autoresearch, routines-discover, skill-creator, git-ai-archaeology, rtk-optimizer, audit-agents-skills, landing-page-generator, talk-pipeline (6 stages + orchestrator), pdf-generator
+**Skills (20)**: methodology-advisor, scaffold, audit-codebase, audit-agents-skills, eval-agents, eval-hooks, autoresearch, routines-discover, skill-creator, git-ai-archaeology, rtk-optimizer, landing-page-generator, pdf-generator, talk-pipeline (orchestrator), talk-stage1-extract, talk-stage2-research, talk-stage3-concepts, talk-stage4-position, talk-stage5-script, talk-stage6-revision
 
 **Templates**: context-engineering patterns, CLAUDE.md examples, rules, semantic anchors, styles, multi-provider configs
 

@@ -232,10 +232,10 @@ Reply to start the script.
 
 ## Templates
 
-- Peer feedback formats: [`templates/feedback-draft.md`](templates/feedback-draft.md)
+- Peer feedback formats: [`templates/feedback-draft.md`](templates/feedback-draft.md), read from `${CLAUDE_SKILL_DIR}/templates/feedback-draft.md`
 
 ## Related
 
-- [Stage 3: Concepts](../stage-3-concepts/SKILL.md): prerequisite
-- [Stage 5: Script](../stage-5-script/SKILL.md): starts after this CHECKPOINT
-- [Orchestrator](../orchestrator/SKILL.md)
+- [Stage 3: Concepts](../talk-stage3-concepts/SKILL.md): prerequisite
+- [Stage 5: Script](../talk-stage5-script/SKILL.md): starts after this CHECKPOINT
+- [Orchestrator](../talk-pipeline/SKILL.md)

@@ -1,11 +1,12 @@
 ---
 name: plan-pipeline-execute
-description: "Execute a validated plan: worktree isolation, TDD scaffolding, level-based parallel agents, quality gate with smoke test, PR creation and merge. Handles everything through to merged PR."
+description: "Execute a validated plan: worktree isolation, TDD scaffolding, level-based parallel agents, quality gate with smoke test, PR creation and merge. Use only after /plan-pipeline-validate has resolved all issues."
+argument-hint: "[plan-name]"
 effort: high
 disable-model-invocation: true
 ---
 
-# /plan-pipeline:execute: Execution to merged PR
+# /plan-pipeline-execute: Execution to merged PR
 
 Execute the validated plan in an isolated worktree. Spawn per-task agents, verify quality, create and merge the PR. Handles everything through to cleanup.
 
@@ -15,7 +16,7 @@ Run `/clear` before this command.
 
 ## Prerequisite
 
-A validated plan must exist at `docs/plans/plan-{name}.md` with all issues resolved (output of `/plan-pipeline:validate`).
+A validated plan must exist at `docs/plans/plan-{name}.md` with all issues resolved (output of `/plan-pipeline-validate`).
 
 ---
 
@@ -51,9 +52,9 @@ Parse the task list from the plan. Group tasks by layer (Layer 1 = foundation, L
 
 **For each layer:**
 1. Identify all tasks in the layer
-2. Spawn one agent per task in parallel (Task tool, run_in_background: true)
+2. Spawn one agent per task in parallel (Agent tool, `run_in_background: true`)
 3. Each agent receives: its task description, files to modify, acceptance criteria, and relevant ADRs
-4. Monitor all agents by reading the output path reported by the agent via `Read` (TaskOutput was removed in v2.1.278)
+4. Monitor all agents by reading the output path reported by the agent via `Read` (TaskOutput was removed in v2.1.277)
 5. Each agent commits on task completion: `git commit -m "feat: {task-description}"`
 6. Wait for all tasks in the layer to complete before starting the next layer
 
@@ -86,7 +87,7 @@ Run in parallel:
 
 If all pass: proceed to smoke test.
 
-If any fail: spawn a `quality-fixer` debug agent with the failure output. It gets up to **3 auto-fix attempts**. After each attempt, re-run the quality gate. If still failing after 3 attempts: stop, report the failure with the full error output, and wait for human intervention.
+If any fail: spawn a debugging subagent (`quality-fixer`) with the failure output. It gets up to **3 auto-fix attempts**. After each attempt, re-run the quality gate. If still failing after 3 attempts: stop, report the failure with the full error output, and wait for human intervention.
 
 **Integration smoke test** *(skip for pure frontend or docs-only plans)*:
 
@@ -119,8 +120,10 @@ Push the worktree branch and create the PR:
 git push origin feature/{plan-name}
 gh pr create \
   --title "{feature-name}: {one-line summary from plan}" \
-  --body "$(cat .pr-body.md)"
+  --body-file "$PR_BODY_FILE"
 ```
+
+Write the PR body (template below) to `$PR_BODY_FILE` outside the worktree first, so it is not committed.
 
 PR body template:
 ```markdown
@@ -173,13 +176,13 @@ git worktree remove .worktrees/{plan-name}
 ## Usage
 
 ```
-/plan-pipeline:execute
+/plan-pipeline-execute
 ```
 
 Picks up the most recent validated plan. Or specify:
 
 ```
-/plan-pipeline:execute plan-user-authentication
+/plan-pipeline-execute plan-user-authentication
 ```
 
 ## Output
@@ -229,14 +232,14 @@ Metrics committed. Worktree cleaned.
 
 ## When to use
 
-After `/plan-pipeline:validate` confirms all issues are resolved. Never skip validation: executing an unvalidated plan skips the independent review that catches ~18 issues on average.
+After `/plan-pipeline-validate` confirms all issues are resolved. Never skip validation: executing an unvalidated plan skips the independent review that catches plan issues before code exists.
 
 ## Pipeline position
 
 ```
-/plan-pipeline:ceo-review    → product direction locked
-/plan-pipeline:eng-review    → architecture locked
-/plan-pipeline:start         → produce implementation plan
-/plan-pipeline:validate      → validate before execution
-/plan-pipeline:execute       → execute to merged PR          ← you are here
+/plan-pipeline-ceo-review    → product direction locked
+/plan-pipeline-eng-review    → architecture locked
+/plan-pipeline-start         → produce implementation plan
+/plan-pipeline-validate      → validate before execution
+/plan-pipeline-execute       → execute to merged PR          ← you are here
 ```

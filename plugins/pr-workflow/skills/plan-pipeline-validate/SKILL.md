@@ -1,13 +1,14 @@
 ---
 name: plan-pipeline-validate
-description: "2-layer plan validation: instant structural checks + trigger-based specialist agents. Auto-fixes issues using ADRs and first principles. Every issue must be resolved before execution."
+description: "2-layer plan validation: instant structural checks plus trigger-based specialist agents. Auto-fixes issues using ADRs and first principles; every issue must be resolved before execution. Use after /plan-pipeline-start and before /plan-pipeline-execute."
+argument-hint: "[plan-name]"
 effort: medium
 disable-model-invocation: true
 ---
 
-# /plan-pipeline:validate: 2-layer validation
+# /plan-pipeline-validate: 2-layer validation
 
-Independently validate the plan produced by `/plan-pipeline:start`. No code is written. Run `/clear` after this command before running `/plan-pipeline:execute`.
+Independently validate the plan produced by `/plan-pipeline-start`. No code is written. Run `/clear` after this command before running `/plan-pipeline-execute`.
 
 Validation is separate from planning by design: validators that didn't write the plan are not anchored to its assumptions.
 
@@ -37,7 +38,7 @@ Run immediately, no agents required. Check the plan document for:
 - [ ] New files are in appropriate directories per project conventions
 
 **ADR Consistency**
-- [ ] Plan decisions align with ADRs created during `/plan-pipeline:start`
+- [ ] Plan decisions align with ADRs created during `/plan-pipeline-start`
 - [ ] No contradiction with existing ADRs in `docs/adr/`
 
 **CLAUDE.md Compliance**
@@ -69,9 +70,9 @@ Select agents by applying trigger rules to the plan content. No user input neede
 | `native-app-reviewer` | Mobile screens, native UI package changes | Sonnet |
 | `integration-reviewer` | New external services, libraries, or OTEL config | Opus |
 
-Spawn triggered agents in parallel (Task tool, run_in_background: true). Each agent receives: the plan file, relevant ADRs, and targeted questions based on its domain.
+Spawn triggered agents in parallel (Agent tool, `run_in_background: true`). Each agent receives: the plan file, relevant ADRs, and targeted questions based on its domain.
 
-Monitor via `Read` on the output path reported by the agent (TaskOutput was removed in v2.1.278). Report progress to user.
+Monitor via `Read` on the output path reported by the agent (TaskOutput was removed in v2.1.277). Report progress to user.
 
 Each agent must return structured findings:
 ```
@@ -126,24 +127,22 @@ Record every issue in `docs/plans/metrics/{name}.json` under `validation.issues`
 
 ---
 
-## Auto-transition
+## Next step
 
-If all issues are auto-resolved (Bucket A only): auto-start `/plan-pipeline:execute` without asking.
-
-If any human input was required (Bucket B): ask "All issues resolved. Ready to execute?" before proceeding.
+Report the resolved issue count and tell the user to run `/clear`, then `/plan-pipeline-execute`. Never start execution automatically: it merges a PR. If human input was required (Bucket B), ask "All issues resolved. Ready to execute?" first.
 
 ---
 
 ## Usage
 
 ```
-/plan-pipeline:validate
+/plan-pipeline-validate
 ```
 
-Picks up the most recent uncommitted plan automatically. Or specify:
+Picks up the most recent plan in `docs/plans/` automatically. Or specify:
 
 ```
-/plan-pipeline:validate plan-user-authentication
+/plan-pipeline-validate plan-user-authentication
 ```
 
 ## Output
@@ -173,19 +172,19 @@ Auto-fix phase:
 Decision recorded. ADR-0011 created.
 
 All 3 issues resolved. Plan updated.
-→ Auto-starting /plan-pipeline:execute
+→ Next: /clear, then /plan-pipeline-execute
 ```
 
 ## When to use
 
-Always run before any `/plan-pipeline:execute` call. The cost of validation ($0.20-3.00) is negligible against the cost of discovering issues mid-execution.
+Always run before any `/plan-pipeline-execute` call. The cost of validation is small against the cost of discovering issues mid-execution.
 
 ## Pipeline position
 
 ```
-/plan-pipeline:ceo-review    → product direction locked
-/plan-pipeline:eng-review    → architecture locked
-/plan-pipeline:start         → produce implementation plan
-/plan-pipeline:validate      → validate before execution     ← you are here
-/plan-pipeline:execute       → execute to merged PR
+/plan-pipeline-ceo-review    → product direction locked
+/plan-pipeline-eng-review    → architecture locked
+/plan-pipeline-start         → produce implementation plan
+/plan-pipeline-validate      → validate before execution     ← you are here
+/plan-pipeline-execute       → execute to merged PR
 ```

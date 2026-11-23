@@ -1,6 +1,6 @@
 ---
 name: tdd-workflow
-description: Test-Driven Development workflow and best practices
+description: "Red-green-refactor workflow with test naming, Arrange-Act-Assert structure and isolation rules. Use when writing a feature or bug fix test-first, or when the user asks for TDD."
 effort: low
 ---
 

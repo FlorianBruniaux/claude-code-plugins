@@ -15,6 +15,14 @@ All notable changes to claude-code-plugins are documented here.
 ### Changed
 
 - **ai-methodology 1.2.0: `git-ai-archaeology` v2**, synced from the guide (`examples/skills/git-ai-archaeology/`): one-pass `scripts/harness_archaeology.py` (file lifecycles, copies and propagations, AI-trailer usage, unmerged harness work), a reading grid in `references/`, routing scenarios in `evals/`, and a six-step `SKILL.md` with completion criteria.
+- **Resync with the guide examples at `650559c6` (Claude Code 2.1.330 pass)**: every plugin file that still matched an earlier guide version was replaced by the current one, about 170 files. Hook fixes: `file-guard.sh` (pr-workflow) now blocks with exit 2 and a stderr message instead of exit 1, which never blocked; `output-validator.sh` (code-quality) reads `tool_input.content` / `tool_response` because PostToolUse sends no `tool_output`; `governance-enforcement-hook.sh` (code-quality) returns one `systemMessage` JSON; `tts-selective.sh` (session-tools) reads `.message`; `file-guard-mcp.sh` (security-suite) works with `shasum` on macOS and its URL check now matches. Skill fixes: `Task` renamed `Agent`, frontmatter corrected, escaped `\$N` in skill bodies, grep `--include` braces. Portable `#!/usr/bin/env bash` shebangs are kept.
+- **Skills moved to the one-directory-per-skill layout** (minor bumps): the flat files `pdf-generator.md` (ai-methodology), `tdd-workflow.md`, `smart-explore.md`, `ast-grep-patterns.md` (code-quality), `security-checklist.md` (security-suite) and `token-audit/skill.md` (session-tools) became `<name>/SKILL.md`, and the nested talk pipeline (`talk-pipeline/stage-N-x/`) became the top-level skills `talk-stage1-extract` to `talk-stage6-revision`, with the orchestrator as `talk-pipeline/SKILL.md`. The documented plugin layout is one `skills/<name>/SKILL.md` per skill. `pr-triage` gains `references/worktree-setup.md`.
+- **Plugin READMEs list skills, not commands**: the stale `Commands` sections (`/ci:all`, `/plan-start` and others) are folded into the skills lists with the current names and counts. The leftover `devops-pipeline/commands/ci/README.md` is removed, since `commands/` loads every markdown file there as a command.
+- Plugin versions: ai-methodology 1.3.0, code-quality 1.2.0, security-suite 1.2.0, session-tools 1.2.0, devops-pipeline 1.1.1, pr-workflow 1.1.1, release-automation 1.1.1, session-summary 3.1.1. The marketplace version stays at 2.2.0 until the next release is cut.
+
+### Kept as local adaptations
+
+- `learning-capture.sh` (ai-methodology), `governance-enforcement-hook.sh` (security-suite) and `session-summary-config.sh` (session-summary) still differ from the guide on purpose; only the model name in the `session-summary-config.sh` sample output was synced.
 
 ## [2.2.0] - 2026-10-28
 

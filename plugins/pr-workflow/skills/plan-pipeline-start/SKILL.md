@@ -1,13 +1,13 @@
 ---
 name: plan-pipeline-start
-description: "5-phase planning: PRD analysis, design review, technical decisions, dynamic research team, metrics. Produces a complete implementation plan + ADRs before any code is written."
+description: "5-phase planning: PRD analysis, design review, technical decisions, dynamic research team, metrics. Produces a complete implementation plan and ADRs before any code is written. Use for any non-trivial feature."
 effort: high
 disable-model-invocation: true
 ---
 
-# /plan-pipeline:start: 5-phase planning
+# /plan-pipeline-start: 5-phase planning
 
-Analyze the request and produce a complete implementation plan through structured phases. No code is written. Every significant decision is recorded. Run `/clear` after this command before running `/plan-pipeline:validate`.
+Analyze the request and produce a complete implementation plan through structured phases. No code is written. Every significant decision is recorded. Run `/clear` after this command before running `/plan-pipeline-validate`.
 
 ---
 
@@ -47,7 +47,7 @@ Create Design ADRs for significant UX decisions (choice of interaction pattern, 
 
 ## Phase 2: Technical analysis
 
-Spawn 1-2 Explore agents for targeted codebase research. Run them in the background via Task tool.
+Spawn 1-2 Explore agents for targeted codebase research. Run them in the background via the Agent tool.
 
 While agents run, check:
 - Existing ADRs in `docs/adr/`: if 3+ ADRs confirm a decision → auto-resolve without asking
@@ -99,12 +99,12 @@ Wait for approval before Phase 4.
 
 **Tier 0**: Conduct inline research. Write plan directly without spawning agents.
 
-**Tier 1+**: Spawn approved agents in parallel using Task tool (run_in_background: true). For each agent, provide:
+**Tier 1+**: Spawn approved agents in parallel using the Agent tool (`run_in_background: true`). For each agent, provide:
 - Its specific research scope
 - The relevant files/areas to investigate
 - The questions it needs to answer
 
-Monitor agents by reading their output files directly (TaskOutput was removed in v2.1.278; use `Read` on the output path reported by the agent instead). Report progress: "3/6 agents complete..."
+Monitor agents by reading their output files directly (TaskOutput was removed in v2.1.277; use `Read` on the output path reported by the agent instead). Report progress: "3/6 agents complete..."
 
 When all agents return: if `planning-coordinator` was spawned, send it all agent reports and have it synthesize the final plan. Otherwise, synthesize directly.
 
@@ -153,21 +153,19 @@ Record timestamps, phase durations, agent counts, and cost estimates in `docs/pl
 
 ---
 
-## Auto-transition
+## Next step
 
-If Phase 1 produced no unresolved ambiguities and Phase 2 produced no unresolved decisions: auto-start `/plan-pipeline:validate` without asking.
-
-If any human discussion occurred: ask "Ready to validate this plan?" before proceeding.
+Report the plan path and tell the user to run `/clear`, then `/plan-pipeline-validate`. This skill is user-invoked only, so Claude cannot start validation itself. If human discussion occurred, ask "Ready to validate this plan?" first.
 
 ---
 
 ## Usage
 
 ```
-/plan-pipeline:start
+/plan-pipeline-start
 ```
 
-Provide the feature description or point to a PRD file when prompted. The command handles the rest interactively.
+Provide the feature description or point to a PRD file when prompted. The skill handles the rest interactively.
 
 ## When to use
 
@@ -178,9 +176,9 @@ For simple changes (typos, trivial refactors): use `/plan` mode instead.
 ## Pipeline position
 
 ```
-/plan-pipeline:ceo-review    → product direction locked
-/plan-pipeline:eng-review    → architecture locked
-/plan-pipeline:start         → produce implementation plan   ← you are here
-/plan-pipeline:validate      → validate before execution
-/plan-pipeline:execute       → execute to merged PR
+/plan-pipeline-ceo-review    → product direction locked
+/plan-pipeline-eng-review    → architecture locked
+/plan-pipeline-start         → produce implementation plan   ← you are here
+/plan-pipeline-validate      → validate before execution
+/plan-pipeline-execute       → execute to merged PR
 ```
